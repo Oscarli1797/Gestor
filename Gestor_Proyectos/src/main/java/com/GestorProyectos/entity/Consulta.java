@@ -1,7 +1,8 @@
 package com.GestorProyectos.entity;
 
+import java.io.Serializable;
 
-public class Consulta {
+public class Consulta implements Serializable{
 
 	
 	private String idConsulta;

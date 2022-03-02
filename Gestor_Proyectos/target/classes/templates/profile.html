@@ -10,7 +10,7 @@
 <title>Perfil</title>
 
 <!-- Logo -->
-<link rel="shortcut icon" href="/assets/images/logo/urjclogo.png"
+<link rel="shortcut icon" href="/assets/images/logo/logo.jpg"
 	type="image/x-icon">
 
 
@@ -36,7 +36,7 @@
 			<div class="row">
 				<div class="col-lg-2">
 					<div class="logo-area">
-						<a href="/"><img src="/assets/images/logo/urjclogo.png"
+						<a href="/"><img src="/assets/images/logo/logo.jpg"
 							alt="logo"></a>
 					</div>
 				</div>
@@ -46,11 +46,8 @@
 					</div>
 					<div class="main-menu">
 						<ul>
-							<li><a href="/GestorProyectos/Libro">Libro</a></li>
-							<li><a href="/GestorProyectos/Categoria">Categoria</a></li>
-							<li><a href="/GestorProyectos/Alternativa">Alternativas</a></li>
-							<li><a href="/GestorProyectos/Prestamo">Prestamo</a></li>
-							<li><a href="/GestorProyectos/Contacto">Contacto</a></li>
+							<li><a href="/search">buscador</a></li>
+
 							 
 							<li class="menu-btn"><a href="/GestorProyectos/Logout"
 								class="login">Salir</a></li>
@@ -83,7 +80,9 @@
                                     <ul class="mt-4">
                                         <li class="mb-3"><h5><i class="fa fa-map-marker"></i> Spain</h5></li>
                                         <li class="mb-3"><h5><i class="fa fa-pie-chart"></i> {{email}}</h5></li>
-                                        <li><h5><i class="fa fa-clock-o"></i> count creative year: 2019</h5></li>
+                                        <li><h5><i class="fa fa-clock-o"></i> count creative year: <script>
+							document.write(new Date().getFullYear());
+						</script></h5></li>
                                     </ul>
                                 </div>
                                 <div class="job-img align-self-center">
@@ -98,136 +97,7 @@
     </section>
     <br>
     <br>
-<!-- Mis Libros Area  -->
-	<div class="table-wrapper-scroll-y my-custom-scrollbar">
 
-		<table class="table table-bordered table-striped mb-6">
-			<thead>
-				<tr>
-					<th scope="col">Mis Libros</th>
-					<th scope="col">Nombre</th>
-					<th scope="col">Autor</th>
-					<th scope="col">Lugar</th>
-					<th scope="col">FechadePrestamo</th>
-
-				</tr>
-			</thead>
-			<tbody>
-				{{#libros}}
-				<tr>
-
-					<th scope="row">{{idLibro}}</th>
-					<td>{{nombre}}</td>
-					<td>{{autor}}</td>
-					<td>{{lugarPublicacion}}</td>
-					<td>{{fechaPrestamo}}</td>
-
-				</tr>
-				{{/libros}}
-
-			</tbody>
-		</table>
-	</div>
-	<br>
-	<br>
-<!--Mis Libros Area End -->
-
-<!-- Mis Peliculas Area  -->
-	<div class="table-wrapper-scroll-y my-custom-scrollbar">
-
-		<table class="table table-bordered table-striped mb-6">
-			<thead>
-				<tr>
-					<th scope="col">Mis Peliculas</th>
-					<th scope="col">Nombre</th>
-					<th scope="col">Ano</th>
-					<th scope="col">Lugar</th>
-					<th scope="col">FechadePrestamo</th>
-
-				</tr>
-			</thead>
-			<tbody>
-				{{#peliculas}}
-				<tr>
-
-					<th scope="row">{{idPelicula}}</th>
-					<td>{{nombre}}</td>
-					<td>{{ano}}</td>
-					<td>{{lugarPublicacion}}</td>
-					<td>{{fechaPrestamo}}</td>
-				
-				</tr>
-				{{/peliculas}}
-
-			</tbody>
-		</table>
-	</div>
-	<br>
-	<br>
-<!--Mis Peliculas Area End -->
-<!-- Mis Fancines Area  -->
-	<div class="table-wrapper-scroll-y my-custom-scrollbar">
-
-		<table class="table table-bordered table-striped mb-6">
-			<thead>
-				<tr>
-					<th scope="col">Mis Fancines</th>
-					<th scope="col">Nombre</th>
-					<th scope="col">Ano</th>
-					<th scope="col">Lugar</th>
-					<th scope="col">FechadePrestamo</th>
-
-				</tr>
-			</thead>
-			<tbody>
-				{{#fancines}}
-				<tr>
-
-					<th scope="row">{{idFanzine}}</th>
-					<td>{{nombre}}</td>
-					<td>{{ano}}</td>
-					<td>{{lugarPublicacion}}</td>
-					<td>{{fechaPrestamo}}</td>
-				</tr>
-				{{/fancines}}
-
-			</tbody>
-		</table>
-	</div>
-	<br>
-	<br>
-<!--Mis Fancines Area End -->
-<!-- Mis comics Area  -->
-	<div class="table-wrapper-scroll-y my-custom-scrollbar">
-
-		<table class="table table-bordered table-striped mb-6">
-			<thead>
-				<tr>
-					<th scope="col">Mis comics</th>
-					<th scope="col">Nombre</th>
-					<th scope="col">Ano</th>
-					<th scope="col">FechadePrestamo</th>
-
-				</tr>
-			</thead>
-			<tbody>
-				{{#revistas}}
-				<tr>
-
-					<th scope="row">{{idRevista}}</th>
-					<td>{{nombre}}</td>
-					<td>{{ano}}</td>
-                    <td>{{fechaPrestamo}}</td>
-
-				</tr>
-				{{/revistas}}
-
-			</tbody>
-		</table>
-	</div>
-	<br>
-	<br>
-<!--Mis comics Area End -->
 	<!-- Footer Area Starts -->
 	<footer class="footer-area section-padding">
 		<div class="footer-widget">
