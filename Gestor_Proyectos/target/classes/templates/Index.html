@@ -106,12 +106,12 @@
         {{/registered}} 
 	</div>
 	{{/consulta}} 
-	<script th:inline="javascript"> // 需要添加 th:inline 才能访问 model 中的属性
+	<script th:inline="javascript"> 
     console.log("页面加载完成");
-    // 获取ModelAndView中的dbgoods对象
+    // obtener objetos de los dbgoods de ModelAndView
 	var ss=$("#warriorsname").val();
 	var lista="[[${lista}]]";
-    // 打印
+    // imprmir
     console.log(ss);
     console.log(lista);
 	</script>

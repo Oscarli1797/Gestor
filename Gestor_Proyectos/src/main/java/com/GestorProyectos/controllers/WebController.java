@@ -20,11 +20,13 @@ import org.eclipse.egit.github.core.service.RepositoryService;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.Project;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.GestorProyectos.Utils.RedisUtils;
 import com.GestorProyectos.entity.Consulta;
 import com.google.code.stackexchange.client.query.QuestionApiQuery;
 import com.google.code.stackexchange.client.query.StackExchangeApiQueryFactory;
@@ -37,10 +39,13 @@ import java.util.regex.Pattern;
 @Controller
 public class WebController {
 
-	private List<Consulta> consultas;
+
+	@Autowired
+	private RedisUtils redisUtils;
+	private Long redisExpire = (long) (120 * 10000);
 
 	@RequestMapping(value = "/buscador")
-	public String indexchange(Model model,HttpSession usuario, @RequestParam int valor, @RequestParam String nombre) throws IOException {
+	public String indexchange(Model model,HttpSession usuario,HttpServletResponse response, @RequestParam int valor, @RequestParam String nombre) throws IOException {
 		if (usuario.getAttribute("registered") == null) {
 			usuario.setAttribute("registered", false);
 
@@ -54,34 +59,43 @@ public class WebController {
 
 		boolean aux = !(Boolean) usuario.getAttribute("registered");
 		model.addAttribute("unregistered", aux);
-		
-		consultas = new ArrayList<Consulta>();
-		
-		
-		switch(valor) {
-		case 1:
-			obtenerConsultasGithub(nombre);
-			break;
-		case 2:
-			obtenerConsultasGitlab(nombre);
-			break;
-		case 3:
-			obtenerConsultasStackOverflow(nombre);
-			break;
-		case 4:
-			obtenerConsultasBitbucket(nombre,10);
-			break;
-		}
-		
-		if(consultas.size()>10) {
-			model.addAttribute("lista", consultas.subList(0, 10));
+		if(redisUtils.exists(valor+nombre)) {
+			 @SuppressWarnings("unchecked")
+			List<Consulta> consultas = (List<Consulta>) redisUtils.get(valor+nombre);
+			 if(consultas.size()>10) {
+					model.addAttribute("lista", consultas.subList(0, 10));
+				}else {
+					model.addAttribute("lista", consultas);
+				}
+				model.addAttribute("consulta", true);
+				usuario.setAttribute("clave", valor+nombre);
+				return "Index";
 		}else {
-			model.addAttribute("lista", consultas);
+			List<Consulta> consultas = new ArrayList<Consulta>();	
+			switch(valor) {
+			case 1:
+				obtenerConsultasGithub(nombre,consultas);
+				break;
+			case 2:
+				obtenerConsultasGitlab(nombre,consultas);
+				break;
+			case 3:
+				obtenerConsultasStackOverflow(nombre,consultas);
+				break;
+			case 4:
+				obtenerConsultasBitbucket(nombre,consultas,10);
+				break;
+			}		
+			if(consultas.size()>10) {
+				model.addAttribute("lista", consultas.subList(0, 10));
+			}else {
+				model.addAttribute("lista", consultas);
+			}
+			model.addAttribute("consulta", true);
+			redisUtils.set(valor+nombre, consultas,redisExpire);
+			return "Index";
 		}
-		model.addAttribute("consulta", true);
-		model.addAttribute("warriors", "sb");
-
-		return "Index";
+		 
 	}
 
 	@RequestMapping(value = "/search")
@@ -103,7 +117,7 @@ public class WebController {
 	}
 
 	@RequestMapping("/exporttext")
-	public void exportConsulta(HttpServletResponse response) {
+	public void exportConsulta(HttpServletResponse response, HttpSession usuario) {
 		StringBuffer text = new StringBuffer();
 		text.append("Id");
 		text.append("   |    ");
@@ -113,17 +127,22 @@ public class WebController {
 		text.append("   |    ");
 		text.append("Numero de visitante");
 		text.append("\r\n");
-		for (Consulta consulta : consultas) {
-			text.append(consulta.getIdConsulta());
-			text.append("   |    ");
-			text.append(consulta.getNombre());
-			text.append("   |    ");
-			text.append(consulta.getAutor());
-			text.append("   |    ");
-			text.append(consulta.getNumeroVisitante());
-			text.append("\r\n");
+		String 	clave=(String) usuario.getAttribute("clave");
+		if(redisUtils.exists(clave)) {
+			@SuppressWarnings("unchecked")
+			List<Consulta> consultas = (List<Consulta>) redisUtils.get(clave);
+			for (Consulta consulta : consultas) {
+				text.append(consulta.getIdConsulta());
+				text.append("   |    ");
+				text.append(consulta.getNombre());
+				text.append("   |    ");
+				text.append(consulta.getAutor());
+				text.append("   |    ");
+				text.append(consulta.getNumeroVisitante());
+				text.append("\r\n");
+			}
+			exportTxt(response, text.toString());
 		}
-		exportTxt(response, text.toString());
 	}
 
 	public void exportTxt(HttpServletResponse response,String text){
@@ -158,11 +177,11 @@ public class WebController {
 		return fileName;
 	}
 
-	private void obtenerConsultasGithub(String nombre) throws IOException {
+	private void obtenerConsultasGithub(String nombre, List<Consulta> consultas) throws IOException {
 		GitHubClient client = new GitHubClient();
-		client.setOAuth2Token("4f06e7f29d92b22df149f6f0b8226bbabe5dff16");
+		client.setOAuth2Token("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");
 		client.getUser();
-		client.setCredentials("oscarli1797", "4f06e7f29d92b22df149f6f0b8226bbabe5dff16");
+		client.setCredentials("oscarli1797", "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");
 		RepositoryService service = new RepositoryService(client);
 		System.out.println("hola mundo4");
 		// List<SearchRepository> search=service.searchRepositories("labh");
@@ -174,7 +193,7 @@ public class WebController {
 			
 			}
 	}
-	private void obtenerConsultasGitlab(String nombre) {
+	private void obtenerConsultasGitlab(String nombre, List<Consulta> consultas) {
 		//Consulta de gitlab YYfuSdapvSjuMQrzzWSy
 	    @SuppressWarnings("resource")
 		GitLabApi gitLabApi = new GitLabApi("https://gitlab.com/", "MxCy9KcEmcnx5NdR7wQN");
@@ -191,17 +210,17 @@ public class WebController {
 			e.printStackTrace();
 		}
 	}
-	private void obtenerConsultasStackOverflow(String nombre) {
+	private void obtenerConsultasStackOverflow(String nombre, List<Consulta> consultas) {
 		StackExchangeApiQueryFactory queryFactory = StackExchangeApiQueryFactory.newInstance("FlCUxvCHHyLU)oJ0kOsgRA((",StackExchangeSite.STACK_OVERFLOW);
 		QuestionApiQuery query2 = queryFactory.newQuestionApiQuery();
 		for(int i = 0; i <= 1; i++) {
-	    List<Question> questions3 = query2.withSort(Question.SortOrder.MOST_VOTED).withPaging(new Paging(i, 100)).withTags("spring").list();
+	    List<Question> questions3 = query2.withSort(Question.SortOrder.MOST_VOTED).withPaging(new Paging(i, 100)).withTags(nombre).list();
 	    for(Question q:questions3) {
 			consultas.add(new Consulta(String.valueOf(q.getOwner().getUserId()),q.getTitle(),q.getOwner().getDisplayName(),q.getViewCount()));
 	    	}
 		}
 	}
-	private void obtenerConsultasBitbucket(String nombre,int maxnumber) {
+	private void obtenerConsultasBitbucket(String nombre,List<Consulta> consultas, int maxnumber) {
 		int i=1;
 		boolean seguir=true;
 		  while(seguir && i<maxnumber) {

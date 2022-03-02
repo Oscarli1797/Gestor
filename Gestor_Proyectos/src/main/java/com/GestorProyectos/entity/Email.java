@@ -4,12 +4,13 @@ public class Email {
 
 	private String userName;
 	private String userMail;
+	private String verifycode;
 
-	public Email(String userName, String userMail) {		
+	public Email(String userName, String userMail,String verifycode) {		
 		this.userName = userName;
 		this.userMail = userMail;
+		this.verifycode=verifycode;
 	}
-	
 	public String getUserName() {
 		return userName;
 	}
@@ -24,6 +25,9 @@ public class Email {
 
 	public void setUserMail(String userMail) {
 		this.userMail = userMail;
+	}
+	public String getVerifycode() {
+		return verifycode;
 	}
 
 	@Override

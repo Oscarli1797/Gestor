@@ -1,5 +1,4 @@
 package com.example.demo;
-import java.security.Security;
 import java.util.Properties;
 
 import javax.mail.Authenticator;
@@ -10,11 +9,8 @@ import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -28,7 +24,7 @@ import com.sun.mail.smtp.SMTPTransport;
 public class ServerController {
 
 
-    private final String usrname = "bibliospringurjc@gmail.com";
+    private final String usrname = "gestorproyectosurjc@gmail.com";
 	@PostMapping(value="/mail/")
 	@ResponseStatus(HttpStatus.CREATED)
 	public ResponseEntity<Boolean> sendMail(@RequestBody Email mail) {
@@ -45,7 +41,7 @@ public class ServerController {
 			Session session = Session.getInstance(props, new Authenticator() {
 				@Override
 	            protected PasswordAuthentication getPasswordAuthentication() {
-	                return new PasswordAuthentication(usrname, "esgrpklmnddxgkue");
+	                return new PasswordAuthentication(usrname, "mtiumhzwjbrpkpul");
 	            }
 			});
 			
@@ -58,11 +54,11 @@ public class ServerController {
 			// receptor
 			msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(mail.getUserMail(), false));
 			// mensaje del correo
-			msg.setSubject("Welcome to BiblioSpringUrjc!");
+			msg.setSubject("Welcome to GestorProyectos!");
 			msg.setText(
 					"Hi " + mail.getUserName()
-							+ "\n\n Thank you for colaborate on our web page. "
-							+ "We hope you'll enjoy it as much as we enjoyed developing it.","utf-8");
+							+ "\n\n Thank you for colaborate on our web page,this is your verifing code:"+mail.getVerifycode()
+							+ "\n\n We hope you'll enjoy it as much as we enjoyed developing it.","utf-8");
 			
 			SMTPTransport t = (SMTPTransport) session.getTransport("smtps");
 			// se inicia sesión en el correo

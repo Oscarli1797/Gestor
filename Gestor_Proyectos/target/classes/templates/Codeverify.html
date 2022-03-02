@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="X-UA-Compatible" content="ie=edge">
-<title>Registro</title>
+<title>CodeVerify</title>
 <!-- Logo -->
 <link rel="shortcut icon" href="/assets/images/logo/urjclogo.png"
 	type="image/x-icon">
@@ -28,43 +28,29 @@
 					<div class="row">
 						<div class="col-12 text-center">
 							<i class="fas fa-3x fa-tachometer-alt tm-site-icon text-center"></i>
-							<h2 class="tm-block-title mt-3">Registro</h2>
+							<h2 class="tm-block-title mt-3">CodeVerify</h2>
 						</div>
 					</div>
 					<div class="row mt-2">
 						<div class="col-12">
 
                           {{alert}}
-							<form action="/register" method="post" class="tm-login-form">
+							<form action="/verificar" method="post" class="tm-login-form">
 								<div class="input-group">
-									<label for="username"
-										class="col-xl-4 col-lg-4 col-md-4 col-sm-5 col-form-label">Usuario</label>
-									<input name="name" type="text"
+									<label for="verify"
+										class="col-xl-4 col-lg-4 col-md-4 col-sm-5 col-form-label">Código de verificación</label>
+									<input name="code" type="text"
 										class="form-control validate col-xl-9 col-lg-8 col-md-8 col-sm-7"
 										required>
 								</div>
-								<div class="input-group mt-3">
-									<label for="password"
-										class="col-xl-4 col-lg-4 col-md-4 col-sm-5 col-form-label">Contraseña</label>
-									<input name="password" type="password"
-										class="form-control validate" required>
-								</div>
-								
-								<div class="input-group mt-3">
-									<label for="email"
-										class="col-xl-4 col-lg-4 col-md-4 col-sm-5 col-form-label">Correo Electrónico</label>
-									<input name="email" type="text"
-										class="form-control validate col-xl-9 col-lg-8 col-md-8 col-sm-7"
-										required>
-								</div>						
 								<div class="input-group mt-3">
 									<button type="submit"
-										class="btn btn-primary d-inline-block mx-auto" value="Registrar">Registrarse</button>
+										class="btn btn-primary d-inline-block mx-auto" value="Verificar">Verificar</button>
 								</div>
 
 								<div class="input-group mt-3">
 									<p>
-										<em>Es necesario que Ingreses o te Registres</em>
+										<em>Es necesario que Introduzca el código de verificación</em>
 									</p>
 								</div>
 							</form>
