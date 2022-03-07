@@ -1,0 +1,12 @@
+/Users/oscarli/git/Gestor/Gestor_Proyectos/src/main/java/com/GestorProyectos/security/SecurityConfiguration.java
+/Users/oscarli/git/Gestor/Gestor_Proyectos/src/main/java/com/GestorProyectos/controllers/WebController.java
+/Users/oscarli/git/Gestor/Gestor_Proyectos/src/main/java/com/GestorProyectos/Utils/RedisUtils.java
+/Users/oscarli/git/Gestor/Gestor_Proyectos/src/main/java/com/GestorProyectos/security/DatabaseUsersLoader.java
+/Users/oscarli/git/Gestor/Gestor_Proyectos/src/main/java/com/GestorProyectos/entity/User.java
+/Users/oscarli/git/Gestor/Gestor_Proyectos/src/main/java/com/GestorProyectos/controllers/UserController.java
+/Users/oscarli/git/Gestor/Gestor_Proyectos/src/main/java/com/GestorProyectos/entity/Consulta.java
+/Users/oscarli/git/Gestor/Gestor_Proyectos/src/main/java/com/GestorProyectos/entity/Email.java
+/Users/oscarli/git/Gestor/Gestor_Proyectos/src/main/java/com/GestorProyectos/Constantes/KConstantes.java
+/Users/oscarli/git/Gestor/Gestor_Proyectos/src/main/java/com/GestorProyectos/GestorProyectosApplication.java
+/Users/oscarli/git/Gestor/Gestor_Proyectos/src/main/java/com/GestorProyectos/repository/UserRepository.java
+/Users/oscarli/git/Gestor/Gestor_Proyectos/src/main/java/com/GestorProyectos/security/UserRepositoryAuthenticationProvider.java

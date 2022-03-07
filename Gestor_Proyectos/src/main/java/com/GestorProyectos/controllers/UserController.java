@@ -1,23 +1,35 @@
 package com.GestorProyectos.controllers;
 
 import java.text.ParseException;
+import java.util.Properties;
 import java.util.concurrent.ThreadLocalRandom;
 
-import javax.annotation.Resource;
+
+import javax.mail.Authenticator;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+
+
+import com.sun.mail.smtp.SMTPTransport;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.client.RestTemplate;
 
 import com.GestorProyectos.Constantes.KConstantes;
 import com.GestorProyectos.Utils.RedisUtils;
@@ -34,6 +46,9 @@ public class UserController {
 	private RedisUtils redisUtils;
 	//Tiempo de validez para el código de verificación
 	private Long redisExpire = (long) (60 * 10000);
+	
+    private final String usrname = "gestorproyectosurjc@gmail.com";
+
 
 	@PostMapping(value = "/register")
 	public String registroCliente(Model model, HttpSession usuario, HttpServletRequest request,
@@ -54,14 +69,12 @@ public class UserController {
 			boolean aux = !(Boolean) usuario.getAttribute("registered");
 			model.addAttribute("unregistered", usuario.getAttribute("registered"));
 			model.addAttribute("registered", aux);
-			String url = "http://localhost:8070/mail/";
 			StringBuffer code=new StringBuffer();
 			for(int i=0;i<6;i++) {
 				code.append(ThreadLocalRandom.current().nextInt(10));
 			}
 			Email nuevoEmail = new Email(name, email,code.toString());
-			RestTemplate rest = new RestTemplate();
-			rest.postForEntity(url, nuevoEmail, String.class);
+			this.sendMail(nuevoEmail);
 			System.out.println("Datos enviados!");
 			redisUtils.set(KConstantes.RedisConstantes.EMAILCODE + code, code.toString(), redisExpire);
 			redisUtils.set(KConstantes.RedisConstantes.NEWUSER + code,nuevoUsuario, redisExpire);
@@ -215,6 +228,43 @@ public class UserController {
 		
 
 		return "Logout";
+	}
+	
+	public ResponseEntity<Boolean> sendMail(Email mail) {
+		try {
+			Properties props = System.getProperties();
+			props.setProperty("mail.smtps.host", "smtp.gmail.com");
+			props.setProperty("mail.smtp.socketFactory.fallback", "false");
+			props.setProperty("mail.smtp.port", "587");
+			props.setProperty("mail.smtp.socketFactory.port", "587");
+			props.setProperty("mail.smtps.auth", "true");
+			props.put("mail.smtps.quitwait", "false");
+
+			Session session = Session.getInstance(props, new Authenticator() {
+				@Override
+	            protected PasswordAuthentication getPasswordAuthentication() {
+	                return new PasswordAuthentication(usrname, "mtiumhzwjbrpkpul");
+	            }
+			});
+			
+			final MimeMessage msg = new MimeMessage(session);
+
+			msg.setFrom(new InternetAddress(usrname));
+			msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(mail.getUserMail(), false));
+			msg.setSubject("Welcome to GestorProyectos!");
+			msg.setText(
+					"Hi " + mail.getUserName()
+							+ "\n\n Thank you for colaborate on our web page,this is your verifing code:"+mail.getVerifycode()
+							+ "\n\n We hope you'll enjoy it as much as we enjoyed developing it.","utf-8");
+			
+			SMTPTransport t = (SMTPTransport) session.getTransport("smtps");
+			t.connect("smtp.gmail.com", usrname, "movimientoNaranja");
+			t.sendMessage(msg, msg.getAllRecipients());
+			t.close();
+		} catch (MessagingException ex) {
+			System.out.println(ex);
+		}
+		return new ResponseEntity <Boolean> (true, HttpStatus.OK);
 	}
 
 	
