@@ -1,0 +1,52 @@
+version: "3"
+
+services:
+##base de datos
+  db:
+    container_name: db
+    image: mysql:5.7
+    ports: 
+      - "3306:3306"
+    volumes:
+       - db_data:/var/lib/mysql
+    environment:
+      - MYSQL_USER=oscar
+      - MYSQL_PASSWORD=oscar
+      - MYSQL_DATABASE=springdb
+      - MYSQL_ONETIME_PASSWORD=true
+    networks:
+      movie-quote-network:
+        aliases:
+          - db
+    restart: unless-stopped
+  web:
+  ##con create jar
+    container_name: web
+    image: docker_gestor_proyecto 
+    ports:
+      - "8081:8081"
+    depends_on: # El contenedor no iniciará hasta que db nos responda que ya se encuentra disponible
+      - db
+      - redis
+    networks:
+      movie-quote-network:
+        aliases:
+          - web 
+    restart: unless-stopped
+    environment:
+      - SPRING.DATASOURCE.USERNAME=oscar
+      - SPRING.DATASOURCE.PASSWORD=oscar
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db/springdb
+    links:
+      - db
+      - sv
+  redis:                              
+    image: redis
+    container_name: my_redis
+    ports:
+      - "6379:6379"
+volumes:
+    db_data:
+
+networks:
+  movie-quote-network:
