@@ -181,7 +181,7 @@ public class WebController {
 		GitHubClient client = new GitHubClient();
 		client.setOAuth2Token("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");
 		client.getUser();
-		client.setCredentials("oscarli1797", "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");
+		client.setCredentials("oscarli1797", "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");
 		RepositoryService service = new RepositoryService(client);
 		System.out.println("hola mundo4");
 		// List<SearchRepository> search=service.searchRepositories("labh");
