@@ -125,7 +125,7 @@ public class WebController {
 		text.append("   |    ");
 		text.append("Autor");
 		text.append("   |    ");
-		text.append("Numero de visitante");
+		text.append("Url");
 		text.append("\r\n");
 		String 	clave=(String) usuario.getAttribute("clave");
 		if(redisUtils.exists(clave)) {
@@ -138,7 +138,7 @@ public class WebController {
 				text.append("   |    ");
 				text.append(consulta.getAutor());
 				text.append("   |    ");
-				text.append(consulta.getNumeroVisitante());
+				text.append(consulta.geturl());
 				text.append("\r\n");
 			}
 			exportTxt(response, text.toString());
@@ -181,7 +181,7 @@ public class WebController {
 		GitHubClient client = new GitHubClient();
 		client.setOAuth2Token("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");
 		client.getUser();
-		client.setCredentials("oscarli1797", "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");
+		client.setCredentials("oscarli1797", "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");
 		RepositoryService service = new RepositoryService(client);
 		System.out.println("hola mundo4");
 		// List<SearchRepository> search=service.searchRepositories("labh");
@@ -189,20 +189,20 @@ public class WebController {
 			for (SearchRepository repo : service.searchRepositories(nombre, i))
 				// System.out.println(repo.getName() +" Nombre author "+repo.getOwner()+ "
 				// Watchers: " + repo.getWatchers());
-				consultas.add(new Consulta(repo.getId(),repo.getName(),repo.getOwner(),repo.getWatchers()));
+				consultas.add(new Consulta(repo.getId(),repo.getName(),repo.getOwner(),repo.getUrl()));
 			
 			}
 	}
 	private void obtenerConsultasGitlab(String nombre, List<Consulta> consultas) {
 		//Consulta de gitlab YYfuSdapvSjuMQrzzWSy
 	    @SuppressWarnings("resource")
-		GitLabApi gitLabApi = new GitLabApi("https://gitlab.com/", "MxCy9KcEmcnx5NdR7wQN");
+		GitLabApi gitLabApi = new GitLabApi("https://gitlab.com/", "glpat-Tx2qTcVntkyWYqkA9wzP");
 	    List<Project> projectPager;
 		try {
 			for(int i = 0; i <= 1; i++) {
 			projectPager = gitLabApi.getProjectApi().getProjects(nombre,i,100);
 			for (Project project : projectPager) {
-				consultas.add(new Consulta(String.valueOf(project.getId()),project.getName(),project.getNamespace().getName(),project.getStarCount()));
+				consultas.add(new Consulta(String.valueOf(project.getId()),project.getName(),project.getNamespace().getName(),project.getWebUrl()));
 			}
 			}
 		} catch (GitLabApiException e) {
@@ -216,7 +216,7 @@ public class WebController {
 		for(int i = 0; i <= 1; i++) {
 	    List<Question> questions3 = query2.withSort(Question.SortOrder.MOST_VOTED).withPaging(new Paging(i, 100)).withTags(nombre).list();
 	    for(Question q:questions3) {
-			consultas.add(new Consulta(String.valueOf(q.getOwner().getUserId()),q.getTitle(),q.getOwner().getDisplayName(),q.getViewCount()));
+			consultas.add(new Consulta(String.valueOf(q.getOwner().getUserId()),q.getTitle(),q.getOwner().getDisplayName(),q.getQuestionAnswersUrl()!=null?q.getQuestionAnswersUrl():""));
 	    	}
 		}
 	}
@@ -241,7 +241,7 @@ public class WebController {
 	      BufferedReader in = null;  
 	      try {   
 	             // Conseguir el url real   
-	             URL realUrl = new URL(url+nombre);   
+	             URL realUrl = new URL(url+nombre.replace(" ", "+"));
 	             // iniciar la coneccion para url real 
 	             URLConnection connection = realUrl.openConnection();   
 	             // Empezar la coneccion   

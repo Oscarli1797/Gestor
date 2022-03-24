@@ -1,0 +1,67 @@
+version: "3"
+
+services:
+##base de datos
+  db:
+    container_name: db
+    image: mysql:5.7
+    ports: 
+      - "3306:3306"
+    volumes:
+       - db_data:/var/lib/mysql
+    environment:
+      MYSQL_USER: "oscar"
+      MYSQL_PASSWORD: "oscar"
+      MYSQL_DATABASE: springdb
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_ONETIME_PASSWORD: true
+    networks:
+      movie-quote-network:
+        aliases:
+          - db
+    restart: unless-stopped
+  web:
+  ##con create jar
+    container_name: web
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on: # El contenedor no iniciará hasta que db nos responda que ya se encuentra disponible
+      - db
+      - redis
+    networks:
+      movie-quote-network:
+        aliases:
+          - web
+    restart: unless-stopped
+    environment:
+      SPRING.DATASOURCE.USERNAME: oscar
+      SPRING.DATASOURCE.PASSWORD: oscar
+      SPRING.REDIS.HOST: redis
+      SPRING.REDIS.PORT: 6379
+      spring.redis.database: 0
+      spring.redis.lettuce.pool.max-active: 8
+      spring.redis.lettuce.pool.min-idle: 0
+      spring.redis.lettuce.pool.max-idle: 8
+      spring.redis.lettuce.pool.max-wait: -1
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/springdb
+    links:
+      - db
+      - redis
+  redis:                              
+    image: redis
+    container_name: redis
+    hostname: redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--bind", "redis", "--port", "6379"]
+    networks:
+      movie-quote-network:
+        aliases:
+          - web
+    restart: unless-stopped
+volumes:
+    db_data:
+
+networks:
+  movie-quote-network:

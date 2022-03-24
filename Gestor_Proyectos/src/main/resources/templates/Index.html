@@ -86,14 +86,14 @@
                 <th>Id</th>
                 <th>Titulo</th>
                 <th>Autor</th>
-                <th>Numero de visitante</th>
+                <th>Url del proyecto</th>
             </tr>
             <tr>
 			{{#lista}}
 			<th scope="row">{{idConsulta}} </th>
 					<td>{{nombre}}</td>
 					<td>{{autor}}</td>
-					<td>{{numeroVisitante}}</td>
+					<td style="color:blue" onclick="location.href='{{url}}';">{{url}}</td>
             </tr>
             {{/lista}}
 		</table>
@@ -107,7 +107,7 @@
 	</div>
 	{{/consulta}} 
 	<script th:inline="javascript"> 
-    console.log("页面加载完成");
+    console.log("Pagina cargado con exito");
     // obtener objetos de los dbgoods de ModelAndView
 	var ss=$("#warriorsname").val();
 	var lista="[[${lista}]]";

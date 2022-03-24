@@ -9,13 +9,13 @@ public class Consulta implements Serializable{
 
 	private String nombre;
 	private String autor;
-	private long numeroVisitante;
+	private String url;
 	
-	public Consulta(String id, String name, String owner, long l) {
+	public Consulta(String id, String name, String owner, String url) {
 		this.idConsulta=id;
 		this.nombre=name;
 		this.autor=owner;
-		this.numeroVisitante=l;
+		this.url=url;
 	}
 	public Consulta() {
 		// TODO Auto-generated constructor stub
@@ -38,11 +38,11 @@ public class Consulta implements Serializable{
 	public void setAutor(String autor) {
 		this.autor = autor;
 	}
-	public long getNumeroVisitante() {
-		return numeroVisitante;
+	public String geturl() {
+		return url;
 	}
-	public void setNumeroVisitante(long numeroVisitante) {
-		this.numeroVisitante = numeroVisitante;
+	public void seturl(String url) {
+		this.url = url;
 	}
 	public void setContent(String url) {
 		String []aux=url.split("/");
@@ -50,7 +50,7 @@ public class Consulta implements Serializable{
     		this.idConsulta=String.valueOf((int)(Math.random()*10000));
     		this.nombre=aux[2];
         	this.autor=aux[1];
-    		this.numeroVisitante = 0;
+    		this.url = "https://bitbucket.org"+url;
     	}
 		
 	}

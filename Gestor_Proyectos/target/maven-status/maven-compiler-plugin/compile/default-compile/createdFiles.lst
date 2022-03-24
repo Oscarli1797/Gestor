@@ -4,6 +4,7 @@ com/GestorProyectos/security/SecurityConfiguration.class
 com/GestorProyectos/entity/Email.class
 com/GestorProyectos/security/UserRepositoryAuthenticationProvider.class
 com/GestorProyectos/Constantes/KConstantes$RedisConstantes.class
+com/GestorProyectos/controllers/UserController$1.class
 com/GestorProyectos/Utils/RedisUtils.class
 com/GestorProyectos/entity/User.class
 com/GestorProyectos/entity/Consulta.class

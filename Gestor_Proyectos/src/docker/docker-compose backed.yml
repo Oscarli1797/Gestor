@@ -22,9 +22,9 @@ services:
   web:
   ##con create jar
     container_name: web
-    image: docker_gestor_proyecto 
-    ports:
-      - "8081:8081"
+    build: .
+    ##ports:
+      ##- "8081:8081"
     depends_on: # El contenedor no iniciará hasta que db nos responda que ya se encuentra disponible
       - db
       - redis
@@ -39,7 +39,6 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://db/springdb
     links:
       - db
-      - sv
   redis:                              
     image: redis
     container_name: my_redis
