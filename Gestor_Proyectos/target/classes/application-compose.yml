@@ -1,0 +1,16 @@
+server.port: 8080
+
+spring:
+  datasource:
+<<<<<<< HEAD
+    url: jdbc:mysql://db:3306/springdb?serverTimezone=UTC
+=======
+    url: jdbc:mysql://mysql:3306/springdb?serverTimezone=UTC
+>>>>>>> branch 'prueba_docker' of https://github.com/Oscarli1797/Gestor.git
+    username: oscar
+    password: oscar
+    
+  redis:
+    host: redis
+    port: 6379
+    password: oscar

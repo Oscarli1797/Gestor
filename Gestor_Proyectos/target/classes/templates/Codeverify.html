@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>CodeVerify</title>
+<!-- Logo -->
+<link rel="shortcut icon" href="/assets/images/logo/urjclogo.png"
+	type="image/x-icon">
+<!-- CSS Files -->
+
+<link rel="stylesheet" href="/assets/css/animate-3.7.0.css">
+<link rel="stylesheet" href="/assets/css/font-awesome-4.7.0.min.css">
+<link rel="stylesheet" href="/assets/fonts/flat-icon/flaticon.css">
+<link rel="stylesheet" href="/assets/css/bootstrap-4.1.3.min.css">
+<link rel="stylesheet" href="/assets/css/owl-carousel.min.css">
+<link rel="stylesheet" href="/assets/css/nice-select.css">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+
+<body class="bg03">
+	<div class="container">
+		<div class="row tm-mt-big">
+			<div class="col-12 mx-auto tm-login-col">
+				<div class="bg-white tm-block">
+					<div class="row">
+						<div class="col-12 text-center">
+							<i class="fas fa-3x fa-tachometer-alt tm-site-icon text-center"></i>
+							<h2 class="tm-block-title mt-3">CodeVerify</h2>
+						</div>
+					</div>
+					<div class="row mt-2">
+						<div class="col-12">
+
+                          {{alert}}
+							<form action="/verificar" method="post" class="tm-login-form">
+								<div class="input-group">
+									<label for="verify"
+										class="col-xl-4 col-lg-4 col-md-4 col-sm-5 col-form-label">Código de verificación</label>
+									<input name="code" type="text"
+										class="form-control validate col-xl-9 col-lg-8 col-md-8 col-sm-7"
+										required>
+								</div>
+								<div class="input-group mt-3">
+									<button type="submit"
+										class="btn btn-primary d-inline-block mx-auto" value="Verificar">Verificar</button>
+								</div>
+
+								<div class="input-group mt-3">
+									<p>
+										<em>Es necesario que Introduzca el código de verificación</em>
+									</p>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<footer class="row tm-mt-big">
+			<div class="col-12 font-weight-light text-center">
+				<p>
+					<span> GestorProyectos &copy; <script>
+						document.write(new Date().getFullYear());
+					</script> | Creado por Chengjian Li
+					</span>
+				</p>
+			</div>
+		</footer>
+	</div>
+</body>
+
+</html>
