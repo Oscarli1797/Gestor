@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Built-By: oscarli
+Build-Jdk: 14.0.2
+Implementation-Title: Gestor_proyectos
+Implementation-Version: 0.0.1-SNAPSHOT
+Implementation-Vendor-Id: Gestor_proyectos
+Implementation-URL: https://projects.spring.io/spring-boot/#/spring-boot
+ -starter-parent/Gestor_proyectos
+Created-By: Maven Integration for Eclipse
+
