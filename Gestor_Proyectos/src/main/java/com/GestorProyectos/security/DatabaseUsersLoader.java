@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.GestorProyectos.entity.User;
@@ -18,13 +19,16 @@ public class DatabaseUsersLoader {
 	@Autowired
 	private UserRepository userRepository;
 
+	@Autowired
+	private BCryptPasswordEncoder passwordEncoder;
+
 	@PostConstruct
 	private void initDatabase() {
 		if (userRepository.findByName("user") == null) {
-			userRepository.save(new User("user", "pass", "dev-user@example.com", "ROLE_USER"));
+			userRepository.save(new User("user", passwordEncoder.encode("pass"), "dev-user@example.com", "ROLE_USER"));
 		}
 		if (userRepository.findByName("admin") == null) {
-			userRepository.save(new User("admin", "adminpass", "dev-admin@example.com", "ROLE_USER", "ROLE_ADMIN"));
+			userRepository.save(new User("admin", passwordEncoder.encode("adminpass"), "dev-admin@example.com", "ROLE_USER", "ROLE_ADMIN"));
 		}
 	}
 

@@ -25,6 +25,7 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,6 +46,8 @@ public class UserController {
 	private UserRepository userRepository;
 	@Autowired
 	private RedisUtils redisUtils;
+	@Autowired
+	private BCryptPasswordEncoder passwordEncoder;
 	//Tiempo de validez para el código de verificación
 	private Long redisExpire = (long) (60 * 10000);
 
@@ -67,7 +70,7 @@ public class UserController {
 
 			System.out.println(email);
 
-			User nuevoUsuario = new User(name, password, email, "ROLE_USER");
+			User nuevoUsuario = new User(name, passwordEncoder.encode(password), email, "ROLE_USER");
 
 			//userRepository.save(nuevoUsuario);
 

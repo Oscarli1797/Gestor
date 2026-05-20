@@ -24,6 +24,9 @@ public class UserRepositoryAuthenticationProvider implements AuthenticationProvi
 	@Autowired
 	private UserRepository userRepository;
 
+	@Autowired
+	private BCryptPasswordEncoder passwordEncoder;
+
 	@Override
 	public Authentication authenticate(Authentication auth) throws AuthenticationException {
 
@@ -34,7 +37,7 @@ public class UserRepositoryAuthenticationProvider implements AuthenticationProvi
 		}
 
 		String password = (String) auth.getCredentials();
-		if (!new BCryptPasswordEncoder().matches(password, user.getPasswordHash())) {
+		if (!passwordEncoder.matches(password, user.getPasswordHash())) {
 			throw new BadCredentialsException("Wrong password");
 		}
 
