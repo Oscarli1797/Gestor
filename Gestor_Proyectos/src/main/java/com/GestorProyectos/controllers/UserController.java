@@ -1,280 +1,140 @@
 package com.GestorProyectos.controllers;
 
-import java.text.ParseException;
-import java.util.Properties;
-import java.util.concurrent.ThreadLocalRandom;
-
-
-import jakarta.mail.Authenticator;
-import jakarta.mail.Message;
-import jakarta.mail.MessagingException;
-import jakarta.mail.PasswordAuthentication;
-import jakarta.mail.Session;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-
-
-import com.sun.mail.smtp.SMTPTransport;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.GestorProyectos.Constantes.KConstantes;
-import com.GestorProyectos.Utils.RedisUtils;
-import com.GestorProyectos.entity.Email;
 import com.GestorProyectos.entity.User;
-import com.GestorProyectos.repository.*;
+import com.GestorProyectos.service.UserService;
 
 @Controller
 public class UserController {
-	
-	@Autowired
-	private UserRepository userRepository;
-	@Autowired
-	private RedisUtils redisUtils;
-	@Autowired
-	private BCryptPasswordEncoder passwordEncoder;
-	//Tiempo de validez para el código de verificación
-	private Long redisExpire = (long) (60 * 10000);
 
-	@Value("${mail.username}")
-	private String mailUsername;
+    @Autowired
+    private UserService userService;
 
-	@Value("${mail.password}")
-	private String mailPassword;
+    @PostMapping(value = "/register")
+    public String registroCliente(Model model, HttpSession session,
+                                  @RequestParam String name,
+                                  @RequestParam String email,
+                                  @RequestParam String password) {
+        session.setAttribute("name", name);
+        session.setAttribute("email", email);
+        session.setAttribute("registered", true);
 
+        if (!userService.isNameAvailable(name) || !userService.isEmailAvailable(email)
+                || name.isEmpty() || email.isEmpty()) {
+            model.addAttribute("alert", "Usuario ya existente");
+            return "new_user";
+        }
 
-	@PostMapping(value = "/register")
-	public String registroCliente(Model model, HttpSession usuario, HttpServletRequest request,
-			@RequestParam String name, @RequestParam String email, @RequestParam String password) {
-		usuario.setAttribute("name", name);
-		usuario.setAttribute("password", password);
-		usuario.setAttribute("email", email);
-		usuario.setAttribute("registered", true);
+        userService.initiateRegistration(name, password, email);
 
-		if ((userRepository.findByName(name) == null) && (userRepository.findByEmail(email) == null) && (name != "") && (email != "")) {
+        model.addAttribute("unregistered", session.getAttribute("registered"));
+        model.addAttribute("registered", !(Boolean) session.getAttribute("registered"));
+        model.addAttribute("consulta", false);
+        model.addAttribute("alert", "");
+        return "Codeverify";
+    }
 
-			System.out.println(email);
+    @PostMapping(value = "/verificar")
+    public String verificar(Model model, @RequestParam String code) {
+        if (userService.verifyAndSave(code)) {
+            return "Index";
+        }
+        model.addAttribute("alert", "The verification code is wrong or has expired. Please try again.");
+        return "Codeverify";
+    }
 
-			User nuevoUsuario = new User(name, passwordEncoder.encode(password), email, "ROLE_USER");
+    @RequestMapping("/new_user")
+    public String newUser(Model model) {
+        model.addAttribute("alert", "");
+        return "new_user";
+    }
 
-			//userRepository.save(nuevoUsuario);
+    @RequestMapping("/")
+    public String index(Model model, HttpSession session) {
+        if (session.getAttribute("registered") == null) {
+            session.setAttribute("registered", false);
+        }
+        if (session.getAttribute("admin") == null) {
+            model.addAttribute("noadmin", true);
+        } else {
+            model.addAttribute("admin", session.getAttribute("admin"));
+        }
+        model.addAttribute("registered", session.getAttribute("registered"));
+        model.addAttribute("unregistered", !(Boolean) session.getAttribute("registered"));
+        model.addAttribute("consulta", false);
+        return "Index";
+    }
 
-			boolean aux = !(Boolean) usuario.getAttribute("registered");
-			model.addAttribute("unregistered", usuario.getAttribute("registered"));
-			model.addAttribute("registered", aux);
-			StringBuffer code=new StringBuffer();
-			for(int i=0;i<6;i++) {
-				code.append(ThreadLocalRandom.current().nextInt(10));
-			}
-			Email nuevoEmail = new Email(name, email,code.toString());
-			this.sendMail(nuevoEmail);
-			System.out.println("Datos enviados!");
-			redisUtils.set(KConstantes.RedisConstantes.EMAILCODE + code, code.toString(), redisExpire);
-			redisUtils.set(KConstantes.RedisConstantes.NEWUSER + code,nuevoUsuario, redisExpire);
+    @RequestMapping("/GestorProyectos/Administrador")
+    public String administrador(Model model, HttpServletRequest request, HttpSession session) {
+        if (session.getAttribute("registered") == null) {
+            session.setAttribute("registered", false);
+        }
+        model.addAttribute("registered", session.getAttribute("registered"));
+        model.addAttribute("unregistered", !(Boolean) session.getAttribute("registered"));
+        model.addAttribute("admin", request.isUserInRole("ADMIN"));
+        model.addAttribute("user", request.isUserInRole("USER"));
+        return "Administrador";
+    }
 
-			model.addAttribute("consulta", false);
-			model.addAttribute("alert", "");			
+    @GetMapping("/GestorProyectos/Login")
+    public String login(Model model) {
+        model.addAttribute("alert", "");
+        return "Login";
+    }
 
-			return ("Codeverify");
+    @RequestMapping("/GestorProyectos/profile")
+    public String profile(Model model, HttpServletRequest request, HttpSession session) {
+        if (session.getAttribute("registered") == null) {
+            session.setAttribute("registered", false);
+        }
+        model.addAttribute("registered", session.getAttribute("registered"));
+        model.addAttribute("unregistered", !(Boolean) session.getAttribute("registered"));
+        model.addAttribute("admin", request.isUserInRole("ADMIN"));
+        model.addAttribute("user", request.isUserInRole("USER"));
+        model.addAttribute("name", session.getAttribute("name"));
+        model.addAttribute("email", session.getAttribute("email"));
+        return "profile";
+    }
 
-		} else {
-			model.addAttribute("alert", "Usuario ya existente");			
-			return ("new_user");
+    @RequestMapping("/GestorProyectos/Login/{loged}")
+    public String loginResult(Model model, UsernamePasswordAuthenticationToken user,
+                              HttpSession session, @PathVariable String loged) {
+        if ("true".equals(loged)) {
+            User usur = userService.findByName(user.getName());
+            session.setAttribute("registered", true);
+            session.setAttribute("name", usur.getName());
+            session.setAttribute("email", usur.getEmail());
+            if (usur.getRoles().contains("ROLE_ADMIN")) {
+                session.setAttribute("admin", true);
+                model.addAttribute("admin", true);
+                model.addAttribute("noadmin", false);
+            }
+            model.addAttribute("registered", true);
+            model.addAttribute("unregistered", false);
+            model.addAttribute("consulta", false);
+            return "Index";
+        }
+        model.addAttribute("alert", "User or password incorrect");
+        return "Login";
+    }
 
-		}
-
-	}
-	@PostMapping(value = "/verificar")
-	public String Verificar(Model model, HttpServletRequest request, @RequestParam String code) throws Exception {
-			try {
-			    String redisCode = (String) redisUtils.get(KConstantes.RedisConstantes.EMAILCODE + code);
-			    //
-			    if (redisCode==null || redisCode.isEmpty()){
-					model.addAttribute("alert", "The E-mail verification code is wrong or has expired. Please try again.");			
-			    	return ("Codeverify");
-			    	}
-			    if(redisUtils.get(KConstantes.RedisConstantes.NEWUSER + code).getClass().equals(User.class)) {
-				    User nuevoUsuario=(User) redisUtils.get(KConstantes.RedisConstantes.NEWUSER + code);
-				    userRepository.save(nuevoUsuario);
-				    redisUtils.remove(KConstantes.RedisConstantes.NEWUSER + code);
-				    redisUtils.remove(KConstantes.RedisConstantes.EMAILCODE + code);
-				    return ("Index");
-			    }
-			    redisUtils.remove(KConstantes.RedisConstantes.NEWUSER + code);
-			    redisUtils.remove(KConstantes.RedisConstantes.EMAILCODE + code);
-				model.addAttribute("alert", "No existe dicha Usuario con este código de verificación");			
-		    	return ("Codeverify");
-			  }catch (Exception ex){
-			    throw new Exception(ex.getMessage());
-			  }
-	}
-
-	@RequestMapping("/new_user")
-	public String new_user(Model model, HttpServletRequest request) {
-		model.addAttribute("alert", "");
-		// atributos del token		
-
-		return "new_user";
-	}
-
-	@RequestMapping("/")
-	public String Index(Model model, HttpServletRequest request, HttpSession usuario) throws ParseException {
-		if (usuario.getAttribute("registered") == null) {
-			usuario.setAttribute("registered", false);
-
-		}
-		if (usuario.getAttribute("admin") == null) {
-			model.addAttribute("noadmin", true);
-		} else {
-			model.addAttribute("admin", usuario.getAttribute("admin"));
-		}
-		model.addAttribute("registered", usuario.getAttribute("registered"));
-
-		boolean aux = !(Boolean) usuario.getAttribute("registered");
-		model.addAttribute("unregistered", aux);
-		model.addAttribute("consulta", false);
-
-
-		// model.addAttribute("admin", request.isUserInRole("ADMIN"));
-		// model.addAttribute("user", request.isUserInRole("USER"));
-
-		return "Index";
-	}
-
-	
-
-	@RequestMapping("/GestorProyectos/Administrador")
-	public String Administrador(Model model, HttpServletRequest request, HttpSession usuario) {
-		if (usuario.getAttribute("registered") == null) {
-			usuario.setAttribute("registered", false);
-
-		}
-		model.addAttribute("registered", usuario.getAttribute("registered"));
-		boolean aux = !(Boolean) usuario.getAttribute("registered");
-		model.addAttribute("unregistered", aux);
-
-		model.addAttribute("admin", request.isUserInRole("ADMIN"));
-		model.addAttribute("user", request.isUserInRole("USER"));		
-
-		return "Administrador";
-	}
-
-	@GetMapping("/GestorProyectos/Login")
-	public String Login(Model model, HttpServletRequest request) {
-		model.addAttribute("alert", "");		
-		return "Login";
-	}
-	@RequestMapping("/GestorProyectos/profile")
-	public String profile(Model model, HttpServletRequest request, HttpSession usuario) {
-		if (usuario.getAttribute("registered") == null) {
-			usuario.setAttribute("registered", false);
-
-		}
-		model.addAttribute("registered", usuario.getAttribute("registered"));
-		boolean aux = !(Boolean) usuario.getAttribute("registered");
-		model.addAttribute("unregistered", aux);
-
-		model.addAttribute("admin", request.isUserInRole("ADMIN"));
-		model.addAttribute("user", request.isUserInRole("USER"));
-		model.addAttribute("name",usuario.getAttribute("name"));
-		model.addAttribute("email", usuario.getAttribute("email"));
-
-		return "profile";
-	}
-
-	@RequestMapping("/GestorProyectos/Login/{loged}")
-	public String LoginError(Model model, UsernamePasswordAuthenticationToken user, HttpSession usuario,
-			@PathVariable String loged, HttpServletRequest request) {
-		if (loged.equals("true")) {
-
-			User usur = userRepository.findByName(user.getName());
-
-			usuario.setAttribute("registered", true);
-			usuario.setAttribute("name", usur.getName());
-			usuario.setAttribute("password", usur.getPasswordHash());
-			usuario.setAttribute("email", usur.getEmail());
-			if (usur.getRoles().contains("ROLE_ADMIN")) {
-				usuario.setAttribute("admin", true);
-				model.addAttribute("admin", usuario.getAttribute("admin"));
-				boolean aux2 = !(Boolean) usuario.getAttribute("admin");
-				model.addAttribute("noadmin", aux2);
-			}
-			model.addAttribute("registered", usuario.getAttribute("registered"));
-			boolean aux = !(Boolean) usuario.getAttribute("registered");
-			model.addAttribute("unregistered", aux);	
-			model.addAttribute("consulta", false);
-
-
-			return "Index";
-		}
-		model.addAttribute("alert", "User or password incorrect");
-		
-
-		return "Login";
-	}
-
-	@GetMapping("/GestorProyectos/Logout")
-	public String Salir(Model model, HttpServletRequest request) {
-		model.addAttribute("admin", request.isUserInRole("ADMIN"));
-		model.addAttribute("user", request.isUserInRole("USER"));
-
-		
-
-		return "Logout";
-	}
-	
-	public ResponseEntity<Boolean> sendMail(Email mail) {
-		try {
-			Properties props = System.getProperties();
-			props.setProperty("mail.smtps.host", "smtp.gmail.com");
-			props.setProperty("mail.smtp.socketFactory.fallback", "false");
-			props.setProperty("mail.smtp.port", "587");
-			props.setProperty("mail.smtp.socketFactory.port", "587");
-			props.setProperty("mail.smtps.auth", "true");
-			props.put("mail.smtps.quitwait", "false");
-
-			Session session = Session.getInstance(props, new Authenticator() {
-				@Override
-	            protected PasswordAuthentication getPasswordAuthentication() {
-	                return new PasswordAuthentication(mailUsername, mailPassword);
-	            }
-			});
-			
-			final MimeMessage msg = new MimeMessage(session);
-
-			msg.setFrom(new InternetAddress(mailUsername));
-			msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(mail.getUserMail(), false));
-			msg.setSubject("Welcome to GestorProyectos!");
-			msg.setText(
-					"Hi " + mail.getUserName()
-							+ "\n\n Thank you for colaborate on our web page,this is your verifing code:"+mail.getVerifycode()
-							+ "\n\n We hope you'll enjoy it as much as we enjoyed developing it.","utf-8");
-			
-			SMTPTransport t = (SMTPTransport) session.getTransport("smtps");
-			t.connect("smtp.gmail.com", mailUsername, mailPassword);
-			t.sendMessage(msg, msg.getAllRecipients());
-			t.close();
-		} catch (MessagingException ex) {
-			System.out.println(ex);
-		}
-		return new ResponseEntity <Boolean> (true, HttpStatus.OK);
-	}
-
-	
-
+    @GetMapping("/GestorProyectos/Logout")
+    public String logout(Model model, HttpServletRequest request) {
+        model.addAttribute("admin", request.isUserInRole("ADMIN"));
+        model.addAttribute("user", request.isUserInRole("USER"));
+        return "Logout";
+    }
 }
