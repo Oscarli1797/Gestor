@@ -1,52 +1,64 @@
 package com.GestorProyectos.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-@EnableGlobalMethodSecurity(securedEnabled = true)
-public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
+@EnableWebSecurity
+@EnableMethodSecurity(securedEnabled = true)
+public class SecurityConfiguration {
 
 	@Autowired
 	public UserRepositoryAuthenticationProvider authenticationProvider;
 
-	@Override
-	protected void configure(HttpSecurity http) throws Exception {
+	@Bean
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-		http.csrf().disable();
+		http.csrf(csrf -> csrf.disable());
+
 		// Public pages
-//		http.authorizeRequests().antMatchers("/GestorProyectos").permitAll();
-//
-//		// Private pages (all other pages)
-//		http.authorizeRequests().antMatchers("/GestorProyectos/Login").permitAll();
-//		http.authorizeRequests().antMatchers("/new_user").permitAll();
-//		http.authorizeRequests().antMatchers("/register").permitAll();
-//		http.authorizeRequests().antMatchers("/GestorProyectos/loginError").permitAll();
-//		
-//		http.authorizeRequests().antMatchers("/GestorProyectos/Administrador").hasAnyRole("ADMIN");
+//		http.authorizeHttpRequests(auth -> auth
+//			.requestMatchers("/GestorProyectos").permitAll()
+//			.requestMatchers("/GestorProyectos/Login").permitAll()
+//			.requestMatchers("/new_user").permitAll()
+//			.requestMatchers("/register").permitAll()
+//			.requestMatchers("/GestorProyectos/loginError").permitAll()
+//			.requestMatchers("/GestorProyectos/Administrador").hasAnyRole("ADMIN")
+//		);
 
-		
 		// Login form
-		http.formLogin().loginPage("/GestorProyectos/Login");
-		http.formLogin().usernameParameter("username");
-		http.formLogin().passwordParameter("password");
-		// en caso del correcto inicio de sesion
-        http.formLogin().defaultSuccessUrl("/GestorProyectos/Login/true");
-        // en caso del incorrecto inicio de sesion
-        http.formLogin().failureUrl("/GestorProyectos/Login/false");
+		http.formLogin(form -> form
+			.loginPage("/GestorProyectos/Login")
+			.usernameParameter("username")
+			.passwordParameter("password")
+			// en caso del correcto inicio de sesion
+			.defaultSuccessUrl("/GestorProyectos/Login/true")
+			// en caso del incorrecto inicio de sesion
+			.failureUrl("/GestorProyectos/Login/false")
+		);
 
 		// Logout
-		http.logout().logoutUrl("/GestorProyectos/Logout");
-		http.logout().logoutSuccessUrl("/");
+		http.logout(logout -> logout
+			.logoutUrl("/GestorProyectos/Logout")
+			.logoutSuccessUrl("/")
+		);
+
+		return http.build();
 	}
 
-	@Override
-	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+	@Bean
+	public AuthenticationManager authManager(HttpSecurity http) throws Exception {
+		AuthenticationManagerBuilder builder =
+			http.getSharedObject(AuthenticationManagerBuilder.class);
 		// Database authentication provider
-		auth.authenticationProvider(authenticationProvider);
+		builder.authenticationProvider(authenticationProvider);
+		return builder.build();
 	}
 }

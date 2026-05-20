@@ -74,8 +74,6 @@
 		</div>
 	</div>
 	<!-- Page Title End -->
-	<input id="warriorsname" type="hidden" th:value="${warriors}" />
-	
 
 	<!-- Feature Area Starts -->
 	{{#consulta}}
@@ -106,15 +104,6 @@
         {{/registered}} 
 	</div>
 	{{/consulta}} 
-	<script th:inline="javascript"> 
-    console.log("页面加载完成");
-    // obtener objetos de los dbgoods de ModelAndView
-	var ss=$("#warriorsname").val();
-	var lista="[[${lista}]]";
-    // imprmir
-    console.log(ss);
-    console.log(lista);
-	</script>
 	<!-- Seccion para Hacerse socio de la biblio terminada -->
 
 

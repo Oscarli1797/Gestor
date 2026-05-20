@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 import org.jvnet.hk2.annotations.Service;
 import org.springframework.beans.factory.annotation.Autowired;

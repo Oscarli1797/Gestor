@@ -1,14 +1,18 @@
 package com.GestorProyectos.security;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import com.GestorProyectos.entity.User;
 import com.GestorProyectos.repository.UserRepository;
 
+// Solo se ejecuta en perfil "dev". En producción los usuarios se crean manualmente.
+// IMPORTANTE: cambia estas contraseñas antes de usar en cualquier entorno compartido.
 @Component
+@Profile("dev")
 public class DatabaseUsersLoader {
 
 	@Autowired
@@ -16,9 +20,12 @@ public class DatabaseUsersLoader {
 
 	@PostConstruct
 	private void initDatabase() {
-
-		userRepository.save(new User("user", "pass","chengjianli17972gmail.com","ROLE_USER"));
-		userRepository.save(new User("admin", "adminpass", "chengjian_li@gamil.com","ROLE_USER", "ROLE_ADMIN"));
+		if (userRepository.findByName("user") == null) {
+			userRepository.save(new User("user", "pass", "dev-user@example.com", "ROLE_USER"));
+		}
+		if (userRepository.findByName("admin") == null) {
+			userRepository.save(new User("admin", "adminpass", "dev-admin@example.com", "ROLE_USER", "ROLE_ADMIN"));
+		}
 	}
 
 }

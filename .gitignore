@@ -1,0 +1,23 @@
+# Maven
+target/
+*.jar
+*.war
+*.ear
+
+# IDE
+.idea/
+*.iml
+.eclipse/
+.settings/
+.classpath
+.project
+.DS_Store
+
+# ============================================================
+# SECRETS — nunca commitear estos archivos
+# ============================================================
+.env
+*.env
+application-local.properties
+application-secrets.properties
+application-prod.properties

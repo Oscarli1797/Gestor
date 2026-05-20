@@ -5,13 +5,13 @@ import java.util.Properties;
 import java.util.concurrent.ThreadLocalRandom;
 
 
-import javax.mail.Authenticator;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.PasswordAuthentication;
-import javax.mail.Session;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
+import jakarta.mail.Authenticator;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.Session;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,10 +19,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 
 
 import com.sun.mail.smtp.SMTPTransport;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -46,8 +47,12 @@ public class UserController {
 	private RedisUtils redisUtils;
 	//Tiempo de validez para el código de verificación
 	private Long redisExpire = (long) (60 * 10000);
-	
-    private final String usrname = "gestorproyectosurjc@gmail.com";
+
+	@Value("${mail.username}")
+	private String mailUsername;
+
+	@Value("${mail.password}")
+	private String mailPassword;
 
 
 	@PostMapping(value = "/register")
@@ -243,13 +248,13 @@ public class UserController {
 			Session session = Session.getInstance(props, new Authenticator() {
 				@Override
 	            protected PasswordAuthentication getPasswordAuthentication() {
-	                return new PasswordAuthentication(usrname, "mtiumhzwjbrpkpul");
+	                return new PasswordAuthentication(mailUsername, mailPassword);
 	            }
 			});
 			
 			final MimeMessage msg = new MimeMessage(session);
 
-			msg.setFrom(new InternetAddress(usrname));
+			msg.setFrom(new InternetAddress(mailUsername));
 			msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(mail.getUserMail(), false));
 			msg.setSubject("Welcome to GestorProyectos!");
 			msg.setText(
@@ -258,7 +263,7 @@ public class UserController {
 							+ "\n\n We hope you'll enjoy it as much as we enjoyed developing it.","utf-8");
 			
 			SMTPTransport t = (SMTPTransport) session.getTransport("smtps");
-			t.connect("smtp.gmail.com", usrname, "movimientoNaranja");
+			t.connect("smtp.gmail.com", mailUsername, mailPassword);
 			t.sendMessage(msg, msg.getAllRecipients());
 			t.close();
 		} catch (MessagingException ex) {
