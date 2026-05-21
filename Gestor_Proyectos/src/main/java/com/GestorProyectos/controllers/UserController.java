@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.GestorProyectos.dto.ApiResponse;
+import com.GestorProyectos.dto.ForgotPasswordRequest;
 import com.GestorProyectos.dto.RegisterRequest;
+import com.GestorProyectos.dto.ResetPasswordRequest;
 import com.GestorProyectos.dto.UserInfoDto;
 import com.GestorProyectos.dto.VerifyRequest;
 import com.GestorProyectos.entity.User;
@@ -50,6 +52,27 @@ public class UserController {
         }
         return ResponseEntity.badRequest()
                 .body(ApiResponse.error("The verification code is wrong or has expired"));
+    }
+
+    /** POST /api/auth/forgot-password — send a reset code to the given email. */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest req) {
+        userService.initiatePasswordReset(req.getEmail());
+        // Always return 200 to avoid revealing whether the email is registered
+        return ResponseEntity.ok(ApiResponse.ok(
+            "If that email is registered you will receive a reset code shortly.", null));
+    }
+
+    /** POST /api/auth/reset-password — validate the code and set a new password. */
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest req) {
+        if (userService.resetPassword(req.getCode(), req.getNewPassword())) {
+            return ResponseEntity.ok(ApiResponse.ok("Password updated successfully.", null));
+        }
+        return ResponseEntity.badRequest()
+            .body(ApiResponse.error("The reset code is invalid or has expired."));
     }
 
     @GetMapping("/me")

@@ -74,6 +74,37 @@ public class UserService {
         return false;
     }
 
+    /**
+     * Sends a 6-digit reset code to the email if it belongs to an existing account.
+     * Always returns true to avoid revealing whether an email is registered.
+     */
+    public boolean initiatePasswordReset(String email) {
+        if (userRepository.findByEmail(email) == null) {
+            return true; // silent — don't reveal account existence
+        }
+        String code = generateVerificationCode();
+        redisUtils.set(KConstantes.RedisConstantes.RESETCODE + code, email, VERIFY_EXPIRE_SECONDS);
+        emailService.sendPasswordResetEmail(email, code);
+        return true;
+    }
+
+    /**
+     * Validates the reset code and updates the password.
+     * @return true if successful, false if code is invalid/expired.
+     */
+    public boolean resetPassword(String code, String newPassword) {
+        String email = (String) redisUtils.get(KConstantes.RedisConstantes.RESETCODE + code);
+        if (email == null || email.isBlank()) return false;
+
+        User user = userRepository.findByEmail(email);
+        if (user == null) return false;
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        redisUtils.remove(KConstantes.RedisConstantes.RESETCODE + code);
+        return true;
+    }
+
     private String generateVerificationCode() {
         StringBuilder code = new StringBuilder();
         for (int i = 0; i < 6; i++) {

@@ -38,3 +38,13 @@ export async function getMe(): Promise<UserInfo> {
   const { data } = await api.get("/api/auth/me");
   return data.data as UserInfo;
 }
+
+export async function forgotPassword(email: string) {
+  const { data } = await api.post("/api/auth/forgot-password", { email });
+  return data;
+}
+
+export async function resetPassword(code: string, newPassword: string) {
+  const { data } = await api.post("/api/auth/reset-password", { code, newPassword });
+  return data;
+}

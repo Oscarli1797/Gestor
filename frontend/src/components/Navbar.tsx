@@ -14,11 +14,11 @@ export default function Navbar() {
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
       <Link href="/" className="text-lg font-semibold tracking-tight">
-        GestorProyectos
+        DevFinder
       </Link>
 
       <nav className="flex items-center gap-4 text-sm">
-        <Link href="/" className="hover:text-blue-600">
+        <Link href="/search" className="hover:text-blue-600">
           Search
         </Link>
         <Link href="/candidates" className="hover:text-blue-600">

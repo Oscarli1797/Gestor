@@ -261,7 +261,7 @@ export default function DeveloperProfilePage() {
 
 function BackLink() {
   return (
-    <Link href="/" className="text-sm text-blue-600 hover:underline mb-6 block">
+    <Link href="/search" className="text-sm text-blue-600 hover:underline mb-6 block">
       ← Back to search
     </Link>
   );

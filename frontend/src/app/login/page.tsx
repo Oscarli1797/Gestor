@@ -21,7 +21,7 @@ export default function LoginPage() {
     try {
       await login(username, password);
       await hydrate();
-      router.push("/");
+      router.push("/search");
     } catch {
       setError("Invalid username or password");
     } finally {
@@ -72,6 +72,11 @@ export default function LoginPage() {
           No account?{" "}
           <Link href="/register" className="text-blue-600 hover:underline">
             Register
+          </Link>
+        </p>
+        <p className="text-sm text-gray-400 mt-2 text-center">
+          <Link href="/forgot-password" className="hover:underline">
+            Forgot password?
           </Link>
         </p>
       </div>

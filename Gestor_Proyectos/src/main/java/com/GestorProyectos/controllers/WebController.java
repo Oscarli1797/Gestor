@@ -39,7 +39,7 @@ public class WebController {
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
-    /** Export the last search result as a plain-text file. */
+    /** Export the last search result as a CSV file. */
     @GetMapping("/export")
     public void export(
             @RequestParam int platform,
@@ -53,52 +53,41 @@ public class WebController {
             return;
         }
 
-        StringBuilder text = new StringBuilder();
-        text.append("ID   |   Username   |   Name   |   Location   |   Followers\r\n");
+        StringBuilder csv = new StringBuilder();
+        csv.append("ID,Platform,Username,Name,Location,Company,Followers,PublicRepos,Email,Website,ProfileUrl\r\n");
         for (DeveloperDto d : developers) {
-            text.append(d.getId()).append("   |   ")
-                .append(d.getUsername()).append("   |   ")
-                .append(nullSafe(d.getDisplayName())).append("   |   ")
-                .append(nullSafe(d.getLocation())).append("   |   ")
-                .append(d.getFollowers() != null ? d.getFollowers() : 0)
-                .append("\r\n");
+            csv.append(csvField(d.getId())).append(",")
+               .append(csvField(d.getPlatform())).append(",")
+               .append(csvField(d.getUsername())).append(",")
+               .append(csvField(d.getDisplayName())).append(",")
+               .append(csvField(d.getLocation())).append(",")
+               .append(csvField(d.getCompany())).append(",")
+               .append(d.getFollowers() != null ? d.getFollowers() : 0).append(",")
+               .append(d.getPublicRepos() != null ? d.getPublicRepos() : 0).append(",")
+               .append(csvField(d.getEmail())).append(",")
+               .append(csvField(d.getBlog())).append(",")
+               .append(csvField(d.getProfileUrl()))
+               .append("\r\n");
         }
-        exportTxt(response, text.toString());
+
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("text/csv; charset=UTF-8");
+        response.addHeader("Content-Disposition", "attachment; filename=\"developers.csv\"");
+        // BOM so Excel opens UTF-8 correctly
+        try (ServletOutputStream out = response.getOutputStream()) {
+            out.write(0xEF); out.write(0xBB); out.write(0xBF);
+            out.write(csv.toString().getBytes("UTF-8"));
+            out.flush();
+        } catch (Exception e) {
+            System.out.println("Error exporting CSV: " + e.getMessage());
+        }
     }
 
     private static final int PAGE_SIZE = 10;
 
-    private static String nullSafe(String s) {
-        return s != null ? s : "";
-    }
-
-    private void exportTxt(HttpServletResponse response, String text) {
-        response.setCharacterEncoding("utf-8");
-        response.setContentType("text/plain");
-        response.addHeader("Content-Disposition",
-            "attachment;filename=" + genFileName("Developer_List", "developers") + ".txt");
-        BufferedOutputStream buff = null;
-        ServletOutputStream outStr = null;
-        try {
-            outStr = response.getOutputStream();
-            buff = new BufferedOutputStream(outStr);
-            buff.write(text.getBytes("UTF-8"));
-            buff.flush();
-        } catch (Exception e) {
-            System.out.println("Error exporting file: " + e.getMessage());
-        } finally {
-            try {
-                if (buff != null) buff.close();
-                if (outStr != null) outStr.close();
-            } catch (Exception ignored) {}
-        }
-    }
-
-    private String genFileName(String fileName, String defaultName) {
-        try {
-            return new String(fileName.getBytes("gb2312"), "ISO8859-1");
-        } catch (Exception e) {
-            return defaultName;
-        }
+    /** Wrap a field in double-quotes and escape internal quotes. Returns empty string for null. */
+    private static String csvField(String s) {
+        if (s == null || s.isBlank()) return "";
+        return "\"" + s.replace("\"", "\"\"") + "\"";
     }
 }
