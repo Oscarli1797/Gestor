@@ -4,48 +4,56 @@ import java.io.BufferedOutputStream;
 import java.util.List;
 
 import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
+import com.GestorProyectos.dto.ApiResponse;
 import com.GestorProyectos.entity.Consulta;
 import com.GestorProyectos.service.SearchService;
 
-@Controller
+@RestController
+@RequestMapping("/api")
 public class WebController {
 
     @Autowired
     private SearchService searchService;
 
-    @RequestMapping(value = "/buscador")
-    public String buscador(Model model, HttpSession session, HttpServletResponse response,
-                           @RequestParam int valor, @RequestParam String nombre) {
-        setupSessionModel(model, session);
+    /**
+     * Search across platforms.
+     * @param platform 1=GitHub, 2=GitLab, 3=StackOverflow, 4=Bitbucket
+     * @param query    search keyword
+     */
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<List<Consulta>>> search(
+            @RequestParam int platform,
+            @RequestParam String query) {
 
-        List<Consulta> consultas = searchService.search(valor, nombre);
-        model.addAttribute("lista", consultas.size() > 10 ? consultas.subList(0, 10) : consultas);
-        model.addAttribute("consulta", true);
-        session.setAttribute("clave", valor + nombre);
-        return "Index";
+        List<Consulta> results = searchService.search(platform, query);
+        List<Consulta> page = results.size() > 10 ? results.subList(0, 10) : results;
+        return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
-    @RequestMapping(value = "/search")
-    public String searchPage(Model model, HttpServletRequest request, HttpSession session) {
-        setupSessionModel(model, session);
-        return "search";
-    }
+    /**
+     * Export search results as a plain-text file.
+     * Reuses the same cache key as /search so no extra API call is needed.
+     */
+    @GetMapping("/export")
+    public void export(
+            @RequestParam int platform,
+            @RequestParam String query,
+            HttpServletResponse response) {
 
-    @RequestMapping("/exporttext")
-    public void exportConsulta(HttpServletResponse response, HttpSession session) {
-        String clave = (String) session.getAttribute("clave");
-        List<Consulta> consultas = searchService.getCachedResults(clave);
-        if (consultas.isEmpty()) return;
+        List<Consulta> consultas = searchService.getCachedResults(platform + query);
+        if (consultas.isEmpty()) {
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+            return;
+        }
 
         StringBuilder text = new StringBuilder();
         text.append("Id   |    Titulo   |    Autor   |    Numero de visitante\r\n");
@@ -86,18 +94,5 @@ public class WebController {
         } catch (Exception e) {
             return defaultName;
         }
-    }
-
-    private void setupSessionModel(Model model, HttpSession session) {
-        if (session.getAttribute("registered") == null) {
-            session.setAttribute("registered", false);
-        }
-        if (session.getAttribute("admin") == null) {
-            model.addAttribute("noadmin", true);
-        } else {
-            model.addAttribute("admin", session.getAttribute("admin"));
-        }
-        model.addAttribute("registered", session.getAttribute("registered"));
-        model.addAttribute("unregistered", !(Boolean) session.getAttribute("registered"));
     }
 }

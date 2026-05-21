@@ -1,5 +1,11 @@
 # Maven
 target/
+
+# Next.js frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
 *.jar
 *.war
 *.ear
