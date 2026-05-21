@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.GestorProyectos.dto.ApiResponse;
-import com.GestorProyectos.entity.Consulta;
+import com.GestorProyectos.dto.DeveloperDto;
 import com.GestorProyectos.service.SearchService;
 
 @RestController
@@ -25,52 +25,58 @@ public class WebController {
     private SearchService searchService;
 
     /**
-     * Search across platforms.
-     * @param platform 1=GitHub, 2=GitLab, 3=StackOverflow, 4=Bitbucket
-     * @param query    search keyword
+     * Search developers on the given platform.
+     * @param platform 1=GitHub 2=GitLab 3=StackOverflow 4=Bitbucket
      */
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<Consulta>>> search(
+    public ResponseEntity<ApiResponse<List<DeveloperDto>>> search(
             @RequestParam int platform,
             @RequestParam String query) {
 
-        List<Consulta> results = searchService.search(platform, query);
-        List<Consulta> page = results.size() > 10 ? results.subList(0, 10) : results;
+        List<DeveloperDto> results = searchService.search(platform, query);
+        List<DeveloperDto> page = results.size() > PAGE_SIZE
+            ? results.subList(0, PAGE_SIZE) : results;
         return ResponseEntity.ok(ApiResponse.ok(page));
     }
 
-    /**
-     * Export search results as a plain-text file.
-     * Reuses the same cache key as /search so no extra API call is needed.
-     */
+    /** Export the last search result as a plain-text file. */
     @GetMapping("/export")
     public void export(
             @RequestParam int platform,
             @RequestParam String query,
             HttpServletResponse response) {
 
-        List<Consulta> consultas = searchService.getCachedResults(platform + query);
-        if (consultas.isEmpty()) {
+        String cacheKey = platform + ":" + query;
+        List<DeveloperDto> developers = searchService.getCachedResults(cacheKey);
+        if (developers.isEmpty()) {
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
             return;
         }
 
         StringBuilder text = new StringBuilder();
-        text.append("Id   |    Titulo   |    Autor   |    Numero de visitante\r\n");
-        for (Consulta c : consultas) {
-            text.append(c.getIdConsulta()).append("   |    ")
-                .append(c.getNombre()).append("   |    ")
-                .append(c.getAutor()).append("   |    ")
-                .append(c.getNumeroVisitante()).append("\r\n");
+        text.append("ID   |   Username   |   Name   |   Location   |   Followers\r\n");
+        for (DeveloperDto d : developers) {
+            text.append(d.getId()).append("   |   ")
+                .append(d.getUsername()).append("   |   ")
+                .append(nullSafe(d.getDisplayName())).append("   |   ")
+                .append(nullSafe(d.getLocation())).append("   |   ")
+                .append(d.getFollowers() != null ? d.getFollowers() : 0)
+                .append("\r\n");
         }
         exportTxt(response, text.toString());
+    }
+
+    private static final int PAGE_SIZE = 10;
+
+    private static String nullSafe(String s) {
+        return s != null ? s : "";
     }
 
     private void exportTxt(HttpServletResponse response, String text) {
         response.setCharacterEncoding("utf-8");
         response.setContentType("text/plain");
         response.addHeader("Content-Disposition",
-            "attachment;filename=" + genAttachmentFileName("Lista_Consulta", "consulta") + ".txt");
+            "attachment;filename=" + genFileName("Developer_List", "developers") + ".txt");
         BufferedOutputStream buff = null;
         ServletOutputStream outStr = null;
         try {
@@ -88,7 +94,7 @@ public class WebController {
         }
     }
 
-    private String genAttachmentFileName(String fileName, String defaultName) {
+    private String genFileName(String fileName, String defaultName) {
         try {
             return new String(fileName.getBytes("gb2312"), "ISO8859-1");
         } catch (Exception e) {

@@ -1,37 +1,28 @@
 package com.GestorProyectos.service;
 
-import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.egit.github.core.SearchRepository;
-import org.eclipse.egit.github.core.client.GitHubClient;
-import org.eclipse.egit.github.core.service.RepositoryService;
-import org.gitlab4j.api.GitLabApi;
-import org.gitlab4j.api.GitLabApiException;
-import org.gitlab4j.api.models.Project;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.GestorProyectos.Utils.RedisUtils;
-import com.GestorProyectos.entity.Consulta;
-import com.google.code.stackexchange.client.query.QuestionApiQuery;
-import com.google.code.stackexchange.client.query.StackExchangeApiQueryFactory;
-import com.google.code.stackexchange.schema.Paging;
-import com.google.code.stackexchange.schema.Question;
-import com.google.code.stackexchange.schema.StackExchangeSite;
+import com.GestorProyectos.dto.DeveloperDto;
 
 @Service
 public class SearchService {
 
     @Value("${api.github.token}")
     private String githubToken;
-
-    @Value("${api.github.username}")
-    private String githubUsername;
 
     @Value("${api.gitlab.token}")
     private String gitlabToken;
@@ -43,116 +34,293 @@ public class SearchService {
     private RedisUtils redisUtils;
 
     private static final long CACHE_EXPIRE_SECONDS = 1200L;
+    private static final int PAGE_SIZE = 10;
+
+    private final RestTemplate restTemplate = new RestTemplate();
 
     /**
-     * Busca en la plataforma indicada. Usa Redis como caché.
-     * @param platform 1=GitHub, 2=GitLab, 3=StackOverflow, 4=Bitbucket
+     * Search developers on the given platform, with Redis caching.
+     * @param platform 1=GitHub 2=GitLab 3=StackOverflow 4=Bitbucket
      */
     @SuppressWarnings("unchecked")
-    public List<Consulta> search(int platform, String nombre) {
-        String cacheKey = platform + nombre;
+    public List<DeveloperDto> search(int platform, String query) {
+        String cacheKey = platform + ":" + query;
         if (redisUtils.exists(cacheKey)) {
-            return (List<Consulta>) redisUtils.get(cacheKey);
+            return (List<DeveloperDto>) redisUtils.get(cacheKey);
         }
-        List<Consulta> results = fetchFromPlatform(platform, nombre);
+        List<DeveloperDto> results = fetchFromPlatform(platform, query);
         redisUtils.set(cacheKey, results, CACHE_EXPIRE_SECONDS);
         return results;
     }
 
-    /** Recupera resultados cacheados por clave de sesión (usado para exportar). */
     @SuppressWarnings("unchecked")
-    public List<Consulta> getCachedResults(String cacheKey) {
+    public List<DeveloperDto> getCachedResults(String cacheKey) {
         if (cacheKey != null && redisUtils.exists(cacheKey)) {
-            return (List<Consulta>) redisUtils.get(cacheKey);
+            return (List<DeveloperDto>) redisUtils.get(cacheKey);
         }
         return List.of();
     }
 
-    private List<Consulta> fetchFromPlatform(int platform, String nombre) {
-        List<Consulta> results = new ArrayList<>();
-        switch (platform) {
-            case 1 -> searchGithub(nombre, results);
-            case 2 -> searchGitlab(nombre, results);
-            case 3 -> searchStackOverflow(nombre, results);
-            case 4 -> searchBitbucket(nombre, results, 10);
+    private List<DeveloperDto> fetchFromPlatform(int platform, String query) {
+        return switch (platform) {
+            case 1 -> searchGithub(query);
+            case 2 -> searchGitlab(query);
+            case 3 -> searchStackOverflow(query);
+            case 4 -> searchBitbucket(query);
+            default -> List.of();
+        };
+    }
+
+    // ─── GitHub ────────────────────────────────────────────────────────────────
+
+    @SuppressWarnings("unchecked")
+    private List<DeveloperDto> searchGithub(String query) {
+        List<DeveloperDto> results = new ArrayList<>();
+        try {
+            HttpHeaders headers = githubHeaders();
+            HttpEntity<?> entity = new HttpEntity<>(headers);
+
+            String url = "https://api.github.com/search/users?q="
+                + encode(query) + "&sort=followers&per_page=" + PAGE_SIZE;
+
+            ResponseEntity<Map> response =
+                restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+            Map<String, Object> body = response.getBody();
+            if (body == null) return results;
+
+            List<Map<String, Object>> items =
+                (List<Map<String, Object>>) body.get("items");
+            if (items == null) return results;
+
+            for (Map<String, Object> item : items) {
+                String login = (String) item.get("login");
+                if (login == null) continue;
+                DeveloperDto dev = fetchGithubProfile(login, entity);
+                if (dev != null) results.add(dev);
+            }
+        } catch (Exception e) {
+            System.out.println("GitHub search error: " + e.getMessage());
         }
         return results;
     }
 
-    private void searchGithub(String nombre, List<Consulta> consultas) {
+    @SuppressWarnings("unchecked")
+    private DeveloperDto fetchGithubProfile(String login, HttpEntity<?> entity) {
         try {
-            GitHubClient client = new GitHubClient();
-            client.setOAuth2Token(githubToken);
-            client.setCredentials(githubUsername, githubToken);
-            RepositoryService service = new RepositoryService(client);
-            for (int i = 1; i <= 1; i++) {
-                for (SearchRepository repo : service.searchRepositories(nombre, i)) {
-                    consultas.add(new Consulta(repo.getId(), repo.getName(), repo.getOwner(), repo.getWatchers()));
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+            ResponseEntity<Map> res = restTemplate.exchange(
+                "https://api.github.com/users/" + login,
+                HttpMethod.GET, entity, Map.class);
+            Map<String, Object> u = res.getBody();
+            if (u == null) return null;
+
+            return DeveloperDto.builder()
+                .id("github:" + login)
+                .platform("github")
+                .username(login)
+                .displayName(stringOrFallback(u, "name", login))
+                .avatarUrl((String) u.get("avatar_url"))
+                .profileUrl((String) u.get("html_url"))
+                .bio((String) u.get("bio"))
+                .location((String) u.get("location"))
+                .company(trimAt((String) u.get("company")))
+                .followers(toInt(u.get("followers")))
+                .publicRepos(toInt(u.get("public_repos")))
+                .email(blankToNull((String) u.get("email")))
+                .blog(blankToNull((String) u.get("blog")))
+                .build();
+        } catch (Exception e) {
+            return null;
         }
     }
 
-    private void searchGitlab(String nombre, List<Consulta> consultas) {
-        try (GitLabApi gitLabApi = new GitLabApi("https://gitlab.com/", gitlabToken)) {
-            for (int i = 0; i <= 1; i++) {
-                List<Project> projects = gitLabApi.getProjectApi().getProjects(nombre, i, 100);
-                for (Project project : projects) {
-                    consultas.add(new Consulta(
-                        String.valueOf(project.getId()),
-                        project.getName(),
-                        project.getNamespace().getName(),
-                        project.getStarCount()
-                    ));
-                }
-            }
-        } catch (GitLabApiException e) {
-            e.printStackTrace();
+    private HttpHeaders githubHeaders() {
+        HttpHeaders h = new HttpHeaders();
+        if (githubToken != null && !githubToken.isEmpty()) {
+            h.set("Authorization", "Bearer " + githubToken);
         }
+        h.set("Accept", "application/vnd.github.v3+json");
+        h.set("X-GitHub-Api-Version", "2022-11-28");
+        return h;
     }
 
-    private void searchStackOverflow(String nombre, List<Consulta> consultas) {
-        StackExchangeApiQueryFactory queryFactory = StackExchangeApiQueryFactory
-            .newInstance(stackoverflowKey, StackExchangeSite.STACK_OVERFLOW);
-        QuestionApiQuery query = queryFactory.newQuestionApiQuery();
-        for (int i = 0; i <= 1; i++) {
-            List<Question> questions = query
-                .withSort(Question.SortOrder.MOST_VOTED)
-                .withPaging(new Paging(i, 100))
-                .withTags(nombre)
-                .list();
-            for (Question q : questions) {
-                consultas.add(new Consulta(
-                    String.valueOf(q.getOwner().getUserId()),
-                    q.getTitle(),
-                    q.getOwner().getDisplayName(),
-                    q.getViewCount()
-                ));
+    // ─── GitLab ────────────────────────────────────────────────────────────────
+
+    @SuppressWarnings("unchecked")
+    private List<DeveloperDto> searchGitlab(String query) {
+        List<DeveloperDto> results = new ArrayList<>();
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            if (gitlabToken != null && !gitlabToken.isEmpty()) {
+                headers.set("PRIVATE-TOKEN", gitlabToken);
             }
+            HttpEntity<?> entity = new HttpEntity<>(headers);
+
+            String url = "https://gitlab.com/api/v4/users?search="
+                + encode(query) + "&per_page=" + PAGE_SIZE + "&active=true";
+
+            ResponseEntity<List> response =
+                restTemplate.exchange(url, HttpMethod.GET, entity, List.class);
+            List<Map<String, Object>> users = response.getBody();
+            if (users == null) return results;
+
+            for (Map<String, Object> u : users) {
+                String username = (String) u.get("username");
+                if (username == null) continue;
+                results.add(DeveloperDto.builder()
+                    .id("gitlab:" + username)
+                    .platform("gitlab")
+                    .username(username)
+                    .displayName(stringOrFallback(u, "name", username))
+                    .avatarUrl((String) u.get("avatar_url"))
+                    .profileUrl((String) u.get("web_url"))
+                    .bio((String) u.get("bio"))
+                    .location((String) u.get("location"))
+                    .company((String) u.get("organization"))
+                    .followers(toInt(u.get("followers")))
+                    .publicRepos(null)
+                    .build());
+            }
+        } catch (Exception e) {
+            System.out.println("GitLab search error: " + e.getMessage());
         }
+        return results;
+    }
+
+    // ─── StackOverflow ─────────────────────────────────────────────────────────
+
+    @SuppressWarnings("unchecked")
+    private List<DeveloperDto> searchStackOverflow(String query) {
+        List<DeveloperDto> results = new ArrayList<>();
+        try {
+            String url = "https://api.stackexchange.com/2.3/users"
+                + "?order=desc&sort=reputation"
+                + "&inname=" + encode(query)
+                + "&site=stackoverflow"
+                + "&pagesize=" + PAGE_SIZE
+                + (stackoverflowKey != null && !stackoverflowKey.isEmpty()
+                    ? "&key=" + stackoverflowKey : "");
+
+            ResponseEntity<Map> response =
+                restTemplate.exchange(url, HttpMethod.GET, HttpEntity.EMPTY, Map.class);
+            Map<String, Object> body = response.getBody();
+            if (body == null) return results;
+
+            List<Map<String, Object>> items =
+                (List<Map<String, Object>>) body.get("items");
+            if (items == null) return results;
+
+            for (Map<String, Object> u : items) {
+                String displayName = (String) u.get("display_name");
+                String link = (String) u.get("link");
+                String userId = String.valueOf(u.get("user_id"));
+                if (displayName == null) continue;
+                results.add(DeveloperDto.builder()
+                    .id("stackoverflow:" + userId)
+                    .platform("stackoverflow")
+                    .username(displayName)
+                    .displayName(displayName)
+                    .avatarUrl((String) u.get("profile_image"))
+                    .profileUrl(link)
+                    .bio(null)
+                    .location((String) u.get("location"))
+                    .company(null)
+                    .followers(toInt(u.get("reputation")))
+                    .publicRepos(toInt(u.get("answer_count")))
+                    .build());
+            }
+        } catch (Exception e) {
+            System.out.println("StackOverflow search error: " + e.getMessage());
+        }
+        return results;
+    }
+
+    // ─── Bitbucket ─────────────────────────────────────────────────────────────
+    // Bitbucket has no public user search. We search repos and extract unique owners.
+
+    @SuppressWarnings("unchecked")
+    private List<DeveloperDto> searchBitbucket(String query) {
+        List<DeveloperDto> results = new ArrayList<>();
+        try {
+            String url = "https://api.bitbucket.org/2.0/repositories?q=name~%22"
+                + encode(query) + "%22&pagelen=" + PAGE_SIZE;
+
+            ResponseEntity<Map> response =
+                restTemplate.exchange(url, HttpMethod.GET, HttpEntity.EMPTY, Map.class);
+            Map<String, Object> body = response.getBody();
+            if (body == null) return results;
+
+            List<Map<String, Object>> repos =
+                (List<Map<String, Object>>) body.get("values");
+            if (repos == null) return results;
+
+            for (Map<String, Object> repo : repos) {
+                Map<String, Object> workspace =
+                    (Map<String, Object>) repo.get("workspace");
+                if (workspace == null) continue;
+
+                String slug = (String) workspace.get("slug");
+                String name = (String) workspace.getOrDefault("name", slug);
+                if (slug == null) continue;
+
+                // Deduplicate
+                String id = "bitbucket:" + slug;
+                if (results.stream().anyMatch(d -> d.getId().equals(id))) continue;
+
+                Map<String, Object> links = (Map<String, Object>) workspace.get("links");
+                String profileUrl = extractHref(links, "html");
+                String avatarUrl = extractHref(links, "avatar");
+
+                results.add(DeveloperDto.builder()
+                    .id(id)
+                    .platform("bitbucket")
+                    .username(slug)
+                    .displayName(name)
+                    .avatarUrl(avatarUrl)
+                    .profileUrl(profileUrl)
+                    .bio(null)
+                    .location(null)
+                    .company(null)
+                    .followers(null)
+                    .publicRepos(null)
+                    .build());
+            }
+        } catch (Exception e) {
+            System.out.println("Bitbucket search error: " + e.getMessage());
+        }
+        return results;
+    }
+
+    // ─── Helpers ───────────────────────────────────────────────────────────────
+
+    private static String encode(String s) {
+        return URLEncoder.encode(s, StandardCharsets.UTF_8);
+    }
+
+    private static Integer toInt(Object val) {
+        if (val == null) return null;
+        if (val instanceof Integer i) return i;
+        if (val instanceof Number n) return n.intValue();
+        try { return Integer.parseInt(val.toString()); } catch (Exception e) { return null; }
+    }
+
+    private static String stringOrFallback(Map<String, Object> map, String key, String fallback) {
+        String v = (String) map.get(key);
+        return (v != null && !v.isBlank()) ? v : fallback;
+    }
+
+    /** Remove leading '@' from GitHub company names. */
+    private static String trimAt(String s) {
+        return s != null ? s.stripLeading().replaceFirst("^@", "") : null;
+    }
+
+    private static String blankToNull(String s) {
+        return (s != null && !s.isBlank()) ? s : null;
     }
 
     @SuppressWarnings("unchecked")
-    private void searchBitbucket(String nombre, List<Consulta> consultas, int maxnumber) {
-        try {
-            RestTemplate restTemplate = new RestTemplate();
-            String apiUrl = "https://api.bitbucket.org/2.0/repositories?q=name~%22"
-                + nombre + "%22&pagelen=" + maxnumber;
-            Map<String, Object> response = restTemplate.getForObject(apiUrl, Map.class);
-            if (response != null && response.containsKey("values")) {
-                List<Map<String, Object>> repos = (List<Map<String, Object>>) response.get("values");
-                for (Map<String, Object> repo : repos) {
-                    String fullName = (String) repo.get("full_name");
-                    String name = (String) repo.get("name");
-                    String owner = fullName != null ? fullName.split("/")[0] : "";
-                    String id = fullName != null ? fullName : String.valueOf(consultas.size());
-                    consultas.add(new Consulta(id, name, owner, 0));
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    private static String extractHref(Map<String, Object> links, String key) {
+        if (links == null) return null;
+        Map<String, Object> entry = (Map<String, Object>) links.get(key);
+        return entry != null ? (String) entry.get("href") : null;
     }
 }

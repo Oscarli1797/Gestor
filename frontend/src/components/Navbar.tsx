@@ -21,6 +21,9 @@ export default function Navbar() {
         <Link href="/" className="hover:text-blue-600">
           Search
         </Link>
+        <Link href="/candidates" className="hover:text-blue-600">
+          Candidates
+        </Link>
 
         {!loading && (
           <>
