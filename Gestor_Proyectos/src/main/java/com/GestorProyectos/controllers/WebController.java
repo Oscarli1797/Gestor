@@ -31,9 +31,10 @@ public class WebController {
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<DeveloperDto>>> search(
             @RequestParam int platform,
-            @RequestParam String query) {
+            @RequestParam String query,
+            @RequestParam(required = false, defaultValue = "") String location) {
 
-        List<DeveloperDto> results = searchService.search(platform, query);
+        List<DeveloperDto> results = searchService.search(platform, query, location);
         List<DeveloperDto> page = results.size() > PAGE_SIZE
             ? results.subList(0, PAGE_SIZE) : results;
         return ResponseEntity.ok(ApiResponse.ok(page));
@@ -44,9 +45,10 @@ public class WebController {
     public void export(
             @RequestParam int platform,
             @RequestParam String query,
+            @RequestParam(required = false, defaultValue = "") String location,
             HttpServletResponse response) {
 
-        String cacheKey = platform + ":" + query;
+        String cacheKey = platform + ":" + query + ":" + location;
         List<DeveloperDto> developers = searchService.getCachedResults(cacheKey);
         if (developers.isEmpty()) {
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);

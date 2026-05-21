@@ -38,6 +38,7 @@ const PLATFORM_COLORS: Record<string, string> = {
 export default function SearchPage() {
   const [platform, setPlatform] = useState(1);
   const [query, setQuery] = useState("");
+  const [location, setLocation] = useState("");
   const [results, setResults] = useState<Developer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -45,13 +46,13 @@ export default function SearchPage() {
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    if (!query.trim()) return;
+    if (!query.trim() && !location.trim()) return;
     setLoading(true);
     setError("");
     setSearched(false);
     try {
       const { data } = await api.get("/api/search", {
-        params: { platform, query },
+        params: { platform, query, location },
       });
       setResults(data.data ?? []);
       setSearched(true);
@@ -64,7 +65,7 @@ export default function SearchPage() {
 
   async function handleExport() {
     const res = await api.get("/api/export", {
-      params: { platform, query },
+      params: { platform, query, location },
       responseType: "blob",
     });
     const url = URL.createObjectURL(res.data);
@@ -75,41 +76,75 @@ export default function SearchPage() {
     URL.revokeObjectURL(url);
   }
 
+  const locationSupported = platform === 1; // GitHub only
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
       <h1 className="text-2xl font-bold mb-2">Find Developers</h1>
       <p className="text-sm text-gray-500 mb-6">
-        Search by name, language, or keyword across platforms.
+        Search by skill, language, or keyword. Filter by location on GitHub.
       </p>
 
-      <form onSubmit={handleSearch} className="flex gap-2 mb-8">
-        <select
-          value={platform}
-          onChange={(e) => setPlatform(Number(e.target.value))}
-          className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
-        >
-          {PLATFORMS.map((p) => (
-            <option key={p.value} value={p.value}>
-              {p.label}
-            </option>
-          ))}
-        </select>
+      <form onSubmit={handleSearch} className="space-y-2 mb-8">
+        {/* Row 1: platform + keyword + search button */}
+        <div className="flex gap-2">
+          <select
+            value={platform}
+            onChange={(e) => setPlatform(Number(e.target.value))}
+            className="border border-gray-300 rounded px-3 py-2 text-sm bg-white shrink-0"
+          >
+            {PLATFORMS.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
+            ))}
+          </select>
 
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder='e.g. "rust", "machine learning", "torvalds"'
-          className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder='Skill or keyword — e.g. "React", "machine learning"'
+            className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-600 text-white px-5 py-2 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? "Searching…" : "Search"}
-        </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-blue-600 text-white px-5 py-2 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50 shrink-0"
+          >
+            {loading ? "Searching…" : "Search"}
+          </button>
+        </div>
+
+        {/* Row 2: location filter */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 max-w-xs">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">📍</span>
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              disabled={!locationSupported}
+              placeholder={locationSupported ? 'City or country — e.g. "Madrid", "Spain"' : "Location filter: GitHub only"}
+              className="w-full border border-gray-300 rounded pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
+            />
+          </div>
+          {locationSupported && location && (
+            <button
+              type="button"
+              onClick={() => setLocation("")}
+              className="text-xs text-gray-400 hover:text-gray-600"
+            >
+              Clear
+            </button>
+          )}
+          {!locationSupported && (
+            <span className="text-xs text-gray-400">
+              Location search is only available on GitHub
+            </span>
+          )}
+        </div>
       </form>
 
       {error && <p className="text-red-600 text-sm mb-4">{error}</p>}

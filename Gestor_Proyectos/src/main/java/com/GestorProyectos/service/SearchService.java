@@ -41,14 +41,15 @@ public class SearchService {
     /**
      * Search developers on the given platform, with Redis caching.
      * @param platform 1=GitHub 2=GitLab 3=StackOverflow 4=Bitbucket
+     * @param location optional city/country filter (only applied on GitHub)
      */
     @SuppressWarnings("unchecked")
-    public List<DeveloperDto> search(int platform, String query) {
-        String cacheKey = platform + ":" + query;
+    public List<DeveloperDto> search(int platform, String query, String location) {
+        String cacheKey = platform + ":" + query + ":" + (location != null ? location : "");
         if (redisUtils.exists(cacheKey)) {
             return (List<DeveloperDto>) redisUtils.get(cacheKey);
         }
-        List<DeveloperDto> results = fetchFromPlatform(platform, query);
+        List<DeveloperDto> results = fetchFromPlatform(platform, query, location);
         redisUtils.set(cacheKey, results, CACHE_EXPIRE_SECONDS);
         return results;
     }
@@ -61,9 +62,9 @@ public class SearchService {
         return List.of();
     }
 
-    private List<DeveloperDto> fetchFromPlatform(int platform, String query) {
+    private List<DeveloperDto> fetchFromPlatform(int platform, String query, String location) {
         return switch (platform) {
-            case 1 -> searchGithub(query);
+            case 1 -> searchGithub(query, location);
             case 2 -> searchGitlab(query);
             case 3 -> searchStackOverflow(query);
             case 4 -> searchBitbucket(query);
@@ -74,14 +75,23 @@ public class SearchService {
     // ─── GitHub ────────────────────────────────────────────────────────────────
 
     @SuppressWarnings("unchecked")
-    private List<DeveloperDto> searchGithub(String query) {
+    private List<DeveloperDto> searchGithub(String query, String location) {
         List<DeveloperDto> results = new ArrayList<>();
         try {
             HttpHeaders headers = githubHeaders();
             HttpEntity<?> entity = new HttpEntity<>(headers);
 
+            // Build GitHub search query with optional location qualifier
+            StringBuilder q = new StringBuilder();
+            if (query != null && !query.isBlank()) q.append(encode(query));
+            if (location != null && !location.isBlank()) {
+                if (q.length() > 0) q.append("+");
+                q.append("location:").append(encode(location));
+            }
+            if (q.length() == 0) return results;
+
             String url = "https://api.github.com/search/users?q="
-                + encode(query) + "&sort=followers&per_page=" + PAGE_SIZE;
+                + q + "&sort=followers&per_page=" + PAGE_SIZE;
 
             ResponseEntity<Map> response =
                 restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
