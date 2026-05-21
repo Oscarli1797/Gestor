@@ -8,8 +8,28 @@ import {
   removeCandidate,
   updateNotes,
   updateLinkedIn,
+  updateStatus,
   SavedCandidate,
+  CANDIDATE_STATUSES,
 } from "@/lib/candidates";
+
+const STATUS_LABELS: Record<string, string> = {
+  saved:        "Saved",
+  contacted:    "Contacted",
+  replied:      "Replied",
+  interviewing: "Interviewing",
+  offered:      "Offered",
+  rejected:     "Rejected",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  saved:        "bg-gray-100 text-gray-600 border-gray-300",
+  contacted:    "bg-blue-100 text-blue-700 border-blue-300",
+  replied:      "bg-cyan-100 text-cyan-700 border-cyan-300",
+  interviewing: "bg-amber-100 text-amber-700 border-amber-300",
+  offered:      "bg-green-100 text-green-700 border-green-300",
+  rejected:     "bg-red-100 text-red-600 border-red-300",
+};
 
 const TIER_COLORS: Record<string, string> = {
   Expert:      "bg-purple-100 text-purple-700",
@@ -22,6 +42,7 @@ const TIER_COLORS: Record<string, string> = {
 export default function CandidatesPage() {
   const [candidates, setCandidates] = useState<SavedCandidate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   useEffect(() => {
     listCandidates()
@@ -55,27 +76,80 @@ export default function CandidatesPage() {
     updateLinkedIn(developerId, linkedinUrl);
   }
 
+  function handleStatusChange(developerId: string, status: string) {
+    setCandidates((prev) =>
+      prev.map((c) => (c.developerId === developerId ? { ...c, status } : c))
+    );
+    updateStatus(developerId, status);
+  }
+
+  const statusCounts = CANDIDATE_STATUSES.reduce<Record<string, number>>(
+    (acc, s) => {
+      acc[s] = candidates.filter((c) => c.status === s).length;
+      return acc;
+    },
+    {}
+  );
+
+  const visible =
+    filterStatus === "all"
+      ? candidates
+      : candidates.filter((c) => c.status === filterStatus);
+
   if (loading)
     return <p className="p-10 text-sm text-gray-400">Loading candidates…</p>;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Saved Candidates</h1>
-        <span className="text-sm text-gray-400">{candidates.length} saved</span>
+        <span className="text-sm text-gray-400">{candidates.length} total</span>
+      </div>
+
+      {/* Status filter bar */}
+      <div className="flex gap-2 flex-wrap mb-6">
+        <button
+          onClick={() => setFilterStatus("all")}
+          className={`px-3 py-1 text-sm rounded-full border font-medium transition-colors ${
+            filterStatus === "all"
+              ? "bg-gray-800 text-white border-gray-800"
+              : "bg-white text-gray-600 border-gray-300 hover:border-gray-500"
+          }`}
+        >
+          All ({candidates.length})
+        </button>
+        {CANDIDATE_STATUSES.map((s) => (
+          <button
+            key={s}
+            onClick={() => setFilterStatus(s)}
+            className={`px-3 py-1 text-sm rounded-full border font-medium transition-colors ${
+              filterStatus === s
+                ? STATUS_COLORS[s] + " border-2"
+                : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+            }`}
+          >
+            {STATUS_LABELS[s]} ({statusCounts[s] ?? 0})
+          </button>
+        ))}
       </div>
 
       {candidates.length === 0 && (
         <div className="text-center py-16 text-gray-400">
           <p className="text-lg mb-2">No candidates saved yet.</p>
-          <Link href="/" className="text-blue-600 hover:underline text-sm">
+          <Link href="/search" className="text-blue-600 hover:underline text-sm">
             Search for developers →
           </Link>
         </div>
       )}
 
+      {candidates.length > 0 && visible.length === 0 && (
+        <div className="text-center py-10 text-gray-400 text-sm">
+          No candidates with status &quot;{STATUS_LABELS[filterStatus]}&quot;.
+        </div>
+      )}
+
       <div className="flex flex-col gap-4">
-        {candidates.map((c) => (
+        {visible.map((c) => (
           <CandidateCard
             key={c.id}
             candidate={c}
@@ -84,6 +158,7 @@ export default function CandidatesPage() {
             onNotesSave={handleNotesSave}
             onLinkedInChange={handleLinkedInChange}
             onLinkedInSave={handleLinkedInSave}
+            onStatusChange={handleStatusChange}
           />
         ))}
       </div>
@@ -100,6 +175,7 @@ function CandidateCard({
   onNotesSave,
   onLinkedInChange,
   onLinkedInSave,
+  onStatusChange,
 }: {
   candidate: SavedCandidate;
   onRemove: (id: string) => void;
@@ -107,6 +183,7 @@ function CandidateCard({
   onNotesSave: (id: string, notes: string) => void;
   onLinkedInChange: (id: string, url: string) => void;
   onLinkedInSave: (id: string, url: string) => void;
+  onStatusChange: (id: string, status: string) => void;
 }) {
   const tierClass = c.scoreTier
     ? (TIER_COLORS[c.scoreTier] ?? "bg-gray-100 text-gray-600")
@@ -202,14 +279,29 @@ function CandidateCard({
           </div>
         </div>
 
-        {/* Remove button */}
-        <button
-          onClick={() => onRemove(c.developerId)}
-          className="text-gray-300 hover:text-red-500 text-xl leading-none shrink-0"
-          title="Remove candidate"
-        >
-          ×
-        </button>
+        {/* Status + Remove */}
+        <div className="flex items-center gap-2 shrink-0">
+          <select
+            value={c.status ?? "saved"}
+            onChange={(e) => onStatusChange(c.developerId, e.target.value)}
+            className={`text-xs border rounded px-2 py-1 font-medium focus:outline-none cursor-pointer ${
+              STATUS_COLORS[c.status ?? "saved"] ?? "bg-gray-100 text-gray-600 border-gray-300"
+            }`}
+          >
+            {CANDIDATE_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {STATUS_LABELS[s]}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => onRemove(c.developerId)}
+            className="text-gray-300 hover:text-red-500 text-xl leading-none"
+            title="Remove candidate"
+          >
+            ×
+          </button>
+        </div>
       </div>
 
       {/* LinkedIn URL */}

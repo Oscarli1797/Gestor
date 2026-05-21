@@ -82,6 +82,26 @@ public class CandidateController {
     }
 
     /**
+     * PATCH /api/candidates/status?developerId=github:torvalds
+     * Update the pipeline status for a saved candidate.
+     * Valid values: saved | contacted | replied | interviewing | offered | rejected
+     */
+    @PatchMapping("/status")
+    public ResponseEntity<ApiResponse<SavedCandidateDto>> updateStatus(
+            @RequestParam String developerId,
+            @RequestBody Map<String, String> body,
+            Principal principal) {
+        String status = body.getOrDefault("status", "saved");
+        try {
+            return ResponseEntity.ok(
+                ApiResponse.ok(candidateService.updateStatus(
+                    principal.getName(), developerId, status)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
      * PATCH /api/candidates/linkedin?developerId=github:torvalds
      * Link or clear a LinkedIn profile URL for a saved candidate.
      */

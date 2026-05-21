@@ -55,6 +55,11 @@ public class SavedCandidate {
     private Integer score;
     private String  scoreTier;
 
+    // ── Pipeline status ───────────────────────────────────────────────────
+    // saved | contacted | replied | interviewing | offered | rejected
+    @Column(nullable = false)
+    private String status = "saved";
+
     // ── Contact info (from GitHub public data) ────────────────────────────
     private String email;
     private String blog;

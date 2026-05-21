@@ -11,12 +11,24 @@ export interface SavedCandidate {
   location: string | null;
   score: number | null;
   scoreTier: string | null;
+  status: string;
   email: string | null;
   blog: string | null;
   linkedinUrl: string | null;
   notes: string | null;
   savedAt: string;
 }
+
+export const CANDIDATE_STATUSES = [
+  "saved",
+  "contacted",
+  "replied",
+  "interviewing",
+  "offered",
+  "rejected",
+] as const;
+
+export type CandidateStatus = (typeof CANDIDATE_STATUSES)[number];
 
 export async function listCandidates(): Promise<SavedCandidate[]> {
   const { data } = await api.get("/api/candidates");
@@ -57,6 +69,16 @@ export async function updateNotes(
   notes: string
 ): Promise<SavedCandidate> {
   const { data } = await api.patch("/api/candidates/notes", { notes }, {
+    params: { developerId },
+  });
+  return data.data as SavedCandidate;
+}
+
+export async function updateStatus(
+  developerId: string,
+  status: string
+): Promise<SavedCandidate> {
+  const { data } = await api.patch("/api/candidates/status", { status }, {
     params: { developerId },
   });
   return data.data as SavedCandidate;

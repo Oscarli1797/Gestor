@@ -55,6 +55,7 @@ public class CandidateService {
                     .location(req.getLocation())
                     .score(req.getScore())
                     .scoreTier(req.getScoreTier())
+                    .status("saved")
                     .email(req.getEmail())
                     .blog(req.getBlog())
                     .notes(req.getNotes())
@@ -78,6 +79,23 @@ public class CandidateService {
             .findByRecruiterIdAndDeveloperId(uid, developerId)
             .orElseThrow(() -> new IllegalArgumentException("Candidate not saved"));
         sc.setNotes(notes);
+        return toDto(candidateRepo.save(sc));
+    }
+
+    private static final java.util.Set<String> VALID_STATUSES = java.util.Set.of(
+        "saved", "contacted", "replied", "interviewing", "offered", "rejected"
+    );
+
+    /** Update the pipeline status for a saved candidate. */
+    public SavedCandidateDto updateStatus(String username, String developerId, String status) {
+        if (!VALID_STATUSES.contains(status)) {
+            throw new IllegalArgumentException("Invalid status: " + status);
+        }
+        long uid = requireUser(username).getId();
+        SavedCandidate sc = candidateRepo
+            .findByRecruiterIdAndDeveloperId(uid, developerId)
+            .orElseThrow(() -> new IllegalArgumentException("Candidate not saved"));
+        sc.setStatus(status);
         return toDto(candidateRepo.save(sc));
     }
 
@@ -111,6 +129,7 @@ public class CandidateService {
             .location(sc.getLocation())
             .score(sc.getScore())
             .scoreTier(sc.getScoreTier())
+            .status(sc.getStatus() != null ? sc.getStatus() : "saved")
             .email(sc.getEmail())
             .blog(sc.getBlog())
             .linkedinUrl(sc.getLinkedinUrl())

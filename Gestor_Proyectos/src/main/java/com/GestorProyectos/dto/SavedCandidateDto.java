@@ -20,6 +20,7 @@ public class SavedCandidateDto {
     private String location;
     private Integer score;
     private String  scoreTier;
+    private String  status;
     private String  email;
     private String  blog;
     private String  linkedinUrl;
