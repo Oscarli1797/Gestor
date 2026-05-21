@@ -14,6 +14,7 @@ const PUBLIC_PATHS = [
   "/verify",
   "/forgot-password",
   "/reset-password",
+  "/oauth2",
 ];
 
 export function middleware(request: NextRequest) {

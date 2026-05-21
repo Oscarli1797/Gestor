@@ -39,6 +39,15 @@ public class SecurityConfiguration {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private HttpCookieOAuth2AuthorizationRequestRepository cookieAuthRequestRepository;
+
+    @Autowired
+    private OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
+
+    @Autowired
+    private OAuth2AuthenticationFailureHandler oAuth2FailureHandler;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Bean
@@ -56,7 +65,8 @@ public class SecurityConfiguration {
         http.authorizeHttpRequests(auth -> auth
             .requestMatchers(
                 "/api/auth/register", "/api/auth/verify", "/api/auth/login",
-                "/api/auth/forgot-password", "/api/auth/reset-password"
+                "/api/auth/forgot-password", "/api/auth/reset-password",
+                "/oauth2/**", "/login/oauth2/**"
             ).permitAll()
             .anyRequest().authenticated()
         );
@@ -105,6 +115,16 @@ public class SecurityConfiguration {
             })
         );
 
+        http.oauth2Login(oauth2 -> oauth2
+            .authorizationEndpoint(ae -> ae
+                .baseUri("/oauth2/authorization")
+                .authorizationRequestRepository(cookieAuthRequestRepository))
+            .redirectionEndpoint(re -> re
+                .baseUri("/login/oauth2/code/*"))
+            .successHandler(oAuth2SuccessHandler)
+            .failureHandler(oAuth2FailureHandler)
+        );
+
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -114,7 +134,7 @@ public class SecurityConfiguration {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:3000"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 

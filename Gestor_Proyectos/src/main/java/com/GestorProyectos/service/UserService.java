@@ -75,6 +75,32 @@ public class UserService {
     }
 
     /**
+     * Finds an existing user by email, or creates a new one for OAuth logins.
+     * OAuth users have no password (passwordHash = null).
+     * @return the username (used as the JWT subject)
+     */
+    public String findOrCreateOAuthUser(String email, String displayName) {
+        User existing = userRepository.findByEmail(email);
+        if (existing != null) {
+            return existing.getName();
+        }
+        // Derive a unique username from the display name or email prefix
+        String base = (displayName != null && !displayName.isBlank())
+            ? displayName.replaceAll("\\s+", "").toLowerCase()
+            : email.split("@")[0];
+
+        String username = base;
+        int suffix = 2;
+        while (userRepository.findByName(username) != null) {
+            username = base + suffix++;
+        }
+
+        User newUser = new User(username, null, email, "ROLE_USER");
+        userRepository.save(newUser);
+        return username;
+    }
+
+    /**
      * Sends a 6-digit reset code to the email if it belongs to an existing account.
      * Always returns true to avoid revealing whether an email is registered.
      */

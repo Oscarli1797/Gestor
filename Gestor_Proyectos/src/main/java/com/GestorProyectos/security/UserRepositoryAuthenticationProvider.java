@@ -37,6 +37,9 @@ public class UserRepositoryAuthenticationProvider implements AuthenticationProvi
 		}
 
 		String password = (String) auth.getCredentials();
+		if (user.getPasswordHash() == null) {
+			throw new BadCredentialsException("This account uses Google sign-in. Please sign in with Google.");
+		}
 		if (!passwordEncoder.matches(password, user.getPasswordHash())) {
 			throw new BadCredentialsException("Wrong password");
 		}
@@ -51,6 +54,6 @@ public class UserRepositoryAuthenticationProvider implements AuthenticationProvi
 
 	@Override
 	public boolean supports(Class<?> authenticationObject) {
-		return true;
+		return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authenticationObject);
 	}
 }
