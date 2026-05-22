@@ -28,6 +28,7 @@ public class DeveloperProfileDto implements Serializable {
     private String joinedAt;     // ISO-8601 date string
     private String email;        // public contact email
     private String blog;         // personal website / blog URL
+    private String linkedinUrl;  // extracted from bio/blog (Layer 1) or manually linked
 
     // ── Engagement ──────────────────────────────────────────────────────────
     private int followers;

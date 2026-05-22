@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.GestorProyectos.dto.ApiResponse;
 import com.GestorProyectos.dto.DeveloperProfileDto;
 import com.GestorProyectos.dto.ScoreBreakdownDto;
+import com.GestorProyectos.service.AiScoringService;
 import com.GestorProyectos.service.GitHubProfileService;
 import com.GestorProyectos.service.ScoringService;
 
@@ -18,11 +19,9 @@ import com.GestorProyectos.service.ScoringService;
 @RequestMapping("/api/developer")
 public class DeveloperController {
 
-    @Autowired
-    private GitHubProfileService gitHubProfileService;
-
-    @Autowired
-    private ScoringService scoringService;
+    @Autowired private GitHubProfileService gitHubProfileService;
+    @Autowired private ScoringService        scoringService;
+    @Autowired private AiScoringService      aiScoringService;
 
     /**
      * GET /api/developer/github/{username}/profile
@@ -38,9 +37,10 @@ public class DeveloperController {
                 "Profile not found. Ensure GITHUB_TOKEN is configured and the username exists."));
         }
 
-        // Score is computed fresh on every request (fast math, no extra I/O).
-        // The profile data itself comes from the Redis cache.
+        // Rule-based score (fast, no I/O)
         ScoreBreakdownDto breakdown = scoringService.score(profile);
+        // Claude AI enrichment — adds aiSummary + aiInsights (cached 24h, no-op if key absent)
+        aiScoringService.enrich(profile, breakdown);
         profile.setScoreBreakdown(breakdown);
 
         return ResponseEntity.ok(ApiResponse.ok(profile));

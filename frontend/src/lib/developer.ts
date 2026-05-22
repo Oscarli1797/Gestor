@@ -25,6 +25,8 @@ export interface ScoreBreakdown {
   techStack: number;
   total: number;
   tier: string;
+  aiSummary: string | null;
+  aiInsights: string[] | null;
 }
 
 export interface DeveloperProfile {
@@ -40,6 +42,7 @@ export interface DeveloperProfile {
   joinedAt: string | null;
   email: string | null;
   blog: string | null;
+  linkedinUrl: string | null;
   followers: number;
   following: number;
   totalPublicRepos: number;

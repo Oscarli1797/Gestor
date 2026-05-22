@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -176,6 +178,10 @@ public class GitHubProfileService {
             (Map<String, Object>) u.get("contributionsCollection");
         ContributionStatsDto stats = parseContributions(contrib);
 
+        String bio        = (String) u.get("bio");
+        String websiteUrl = blankToNull((String) u.get("websiteUrl"));
+        String linkedinUrl = extractLinkedIn(bio, websiteUrl);
+
         return DeveloperProfileDto.builder()
             .id("github:" + login)
             .platform("github")
@@ -183,12 +189,13 @@ public class GitHubProfileService {
             .displayName(stringOrFallback(u, "name", login))
             .avatarUrl((String) u.get("avatarUrl"))
             .profileUrl((String) u.get("url"))
-            .bio((String) u.get("bio"))
+            .bio(bio)
             .location((String) u.get("location"))
             .company(trimAt((String) u.get("company")))
             .joinedAt(isoDateOnly((String) u.get("createdAt")))
             .email(blankToNull((String) u.get("email")))
-            .blog(blankToNull((String) u.get("websiteUrl")))
+            .blog(websiteUrl)
+            .linkedinUrl(linkedinUrl)
             .followers(followers)
             .following(following)
             .totalPublicRepos(totalPublicRepos)
@@ -253,6 +260,31 @@ public class GitHubProfileService {
             totalCommits, totalPRs, totalIssues, totalReviews,
             totalContributions, last90, last30
         );
+    }
+
+    // ─── LinkedIn extraction ──────────────────────────────────────────────
+
+    private static final Pattern LINKEDIN_PATTERN = Pattern.compile(
+        "(?:https?://)?(?:www\\.)?linkedin\\.com/in/([\\w%-]+)/?",
+        Pattern.CASE_INSENSITIVE
+    );
+
+    /**
+     * Attempts to extract a LinkedIn profile URL from the developer's bio text
+     * or their blog/website field. Returns null if no LinkedIn URL is found.
+     */
+    static String extractLinkedIn(String bio, String websiteUrl) {
+        // Check blog/website field first (direct URL is most reliable)
+        if (websiteUrl != null) {
+            Matcher m = LINKEDIN_PATTERN.matcher(websiteUrl);
+            if (m.find()) return "https://www.linkedin.com/in/" + m.group(1);
+        }
+        // Fall back to scanning the bio text
+        if (bio != null) {
+            Matcher m = LINKEDIN_PATTERN.matcher(bio);
+            if (m.find()) return "https://www.linkedin.com/in/" + m.group(1);
+        }
+        return null;
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────
