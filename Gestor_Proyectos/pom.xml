@@ -86,6 +86,13 @@
 			<artifactId>spring-boot-starter-oauth2-client</artifactId>
 		</dependency>
 
+		<!-- Stripe payments -->
+		<dependency>
+			<groupId>com.stripe</groupId>
+			<artifactId>stripe-java</artifactId>
+			<version>25.3.0</version>
+		</dependency>
+
 		<!-- Flyway -->
 		<dependency>
 			<groupId>org.flywaydb</groupId>

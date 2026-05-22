@@ -1,6 +1,7 @@
 package com.GestorProyectos.entity;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,6 +34,25 @@ public class User implements Serializable{
 
 	@ElementCollection(fetch = FetchType.EAGER)
 	private List<String> roles;
+
+	// ── Subscription ──────────────────────────────────────────────────────
+
+	@Column(nullable = false)
+	private String plan = "free";
+
+	@Column(name = "stripe_customer_id")
+	private String stripeCustomerId;
+
+	@Column(name = "stripe_subscription_id")
+	private String stripeSubscriptionId;
+
+	// ── Search quota (rolling monthly, free plan only) ─────────────────────
+
+	@Column(name = "search_count", nullable = false)
+	private int searchCount = 0;
+
+	@Column(name = "search_reset_at")
+	private LocalDate searchResetAt;
 	
 	
 	public User() {
@@ -76,5 +96,20 @@ public class User implements Serializable{
 	public void setRoles(List<String> roles) {
 		this.roles = roles;
 	}
+
+	public String getPlan() { return plan; }
+	public void setPlan(String plan) { this.plan = plan; }
+
+	public String getStripeCustomerId() { return stripeCustomerId; }
+	public void setStripeCustomerId(String id) { this.stripeCustomerId = id; }
+
+	public String getStripeSubscriptionId() { return stripeSubscriptionId; }
+	public void setStripeSubscriptionId(String id) { this.stripeSubscriptionId = id; }
+
+	public int getSearchCount() { return searchCount; }
+	public void setSearchCount(int count) { this.searchCount = count; }
+
+	public LocalDate getSearchResetAt() { return searchResetAt; }
+	public void setSearchResetAt(LocalDate date) { this.searchResetAt = date; }
 
 }

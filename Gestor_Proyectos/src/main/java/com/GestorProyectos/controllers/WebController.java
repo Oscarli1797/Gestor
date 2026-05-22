@@ -1,6 +1,7 @@
 package com.GestorProyectos.controllers;
 
 import java.io.BufferedOutputStream;
+import java.security.Principal;
 import java.util.List;
 
 import jakarta.servlet.ServletOutputStream;
@@ -8,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -15,14 +17,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.GestorProyectos.dto.ApiResponse;
 import com.GestorProyectos.dto.DeveloperDto;
+import com.GestorProyectos.service.QuotaService;
+import com.GestorProyectos.service.QuotaService.QuotaExceededException;
 import com.GestorProyectos.service.SearchService;
 
 @RestController
 @RequestMapping("/api")
 public class WebController {
 
-    @Autowired
-    private SearchService searchService;
+    @Autowired private SearchService searchService;
+    @Autowired private QuotaService  quotaService;
 
     /**
      * Search developers on the given platform.
@@ -32,12 +36,19 @@ public class WebController {
     public ResponseEntity<ApiResponse<List<DeveloperDto>>> search(
             @RequestParam int platform,
             @RequestParam String query,
-            @RequestParam(required = false, defaultValue = "") String location) {
+            @RequestParam(required = false, defaultValue = "") String location,
+            Principal principal) {
 
+        quotaService.checkAndIncrementSearch(principal.getName());
         List<DeveloperDto> results = searchService.search(platform, query, location);
         List<DeveloperDto> page = results.size() > PAGE_SIZE
             ? results.subList(0, PAGE_SIZE) : results;
         return ResponseEntity.ok(ApiResponse.ok(page));
+    }
+
+    @ExceptionHandler(QuotaExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleQuota(QuotaExceededException ex) {
+        return ResponseEntity.status(429).body(ApiResponse.error(ex.getMessage()));
     }
 
     /** Export the last search result as a CSV file. */

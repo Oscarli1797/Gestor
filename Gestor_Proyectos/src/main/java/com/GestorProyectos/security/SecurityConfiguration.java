@@ -66,6 +66,7 @@ public class SecurityConfiguration {
             .requestMatchers(
                 "/api/auth/register", "/api/auth/verify", "/api/auth/login",
                 "/api/auth/forgot-password", "/api/auth/reset-password",
+                "/api/stripe/webhook",
                 "/oauth2/**", "/login/oauth2/**"
             ).permitAll()
             .anyRequest().authenticated()

@@ -14,12 +14,14 @@ import com.GestorProyectos.entity.SavedCandidate;
 import com.GestorProyectos.entity.User;
 import com.GestorProyectos.repository.SavedCandidateRepository;
 import com.GestorProyectos.repository.UserRepository;
+import com.GestorProyectos.service.QuotaService;
 
 @Service
 public class CandidateService {
 
     @Autowired private SavedCandidateRepository candidateRepo;
-    @Autowired private UserRepository userRepository;
+    @Autowired private UserRepository            userRepository;
+    @Autowired private QuotaService              quotaService;
 
     /** All candidates saved by this recruiter, newest first. */
     public List<SavedCandidateDto> listForUser(String username) {
@@ -40,6 +42,10 @@ public class CandidateService {
      */
     public SavedCandidateDto save(String username, SaveCandidateRequest req) {
         User user = requireUser(username);
+        // Only check quota for new saves (idempotent re-save is free)
+        if (!candidateRepo.existsByRecruiterIdAndDeveloperId(user.getId(), req.getDeveloperId())) {
+            quotaService.checkCandidateSave(username);
+        }
         return candidateRepo
             .findByRecruiterIdAndDeveloperId(user.getId(), req.getDeveloperId())
             .map(this::toDto)

@@ -16,4 +16,6 @@ public interface SavedCandidateRepository extends JpaRepository<SavedCandidate, 
     boolean existsByRecruiterIdAndDeveloperId(Long recruiterId, String developerId);
 
     void deleteByRecruiterIdAndDeveloperId(Long recruiterId, String developerId);
+
+    long countByRecruiterId(Long recruiterId);
 }

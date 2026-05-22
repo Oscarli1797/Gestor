@@ -19,19 +19,23 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.GestorProyectos.dto.ApiResponse;
 import com.GestorProyectos.dto.ForgotPasswordRequest;
+import com.GestorProyectos.dto.PlanDto;
 import com.GestorProyectos.dto.RegisterRequest;
 import com.GestorProyectos.dto.ResetPasswordRequest;
 import com.GestorProyectos.dto.UserInfoDto;
 import com.GestorProyectos.dto.VerifyRequest;
 import com.GestorProyectos.entity.User;
+import com.GestorProyectos.repository.SavedCandidateRepository;
+import com.GestorProyectos.service.QuotaService;
 import com.GestorProyectos.service.UserService;
 
 @RestController
 @RequestMapping("/api/auth")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    @Autowired private UserService              userService;
+    @Autowired private QuotaService             quotaService;
+    @Autowired private SavedCandidateRepository candidateRepo;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest req) {
@@ -73,6 +77,28 @@ public class UserController {
         }
         return ResponseEntity.badRequest()
             .body(ApiResponse.error("The reset code is invalid or has expired."));
+    }
+
+    /** GET /api/auth/plan — current plan + usage stats. */
+    @GetMapping("/plan")
+    public ResponseEntity<ApiResponse<PlanDto>> plan(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("Not authenticated"));
+        }
+        User user = userService.findByName(principal.getName());
+        if (user == null) {
+            return ResponseEntity.status(404).body(ApiResponse.error("User not found"));
+        }
+        boolean isPro = "pro".equals(user.getPlan());
+        long candidateCount = candidateRepo.countByRecruiterId(user.getId());
+        PlanDto dto = PlanDto.builder()
+            .plan(user.getPlan())
+            .searchCount(quotaService.currentSearchCount(user))
+            .searchLimit(isPro ? -1 : QuotaService.FREE_SEARCH_LIMIT)
+            .candidateCount(candidateCount)
+            .candidateLimit(isPro ? -1 : QuotaService.FREE_CANDIDATE_LIMIT)
+            .build();
+        return ResponseEntity.ok(ApiResponse.ok(dto));
     }
 
     @GetMapping("/me")

@@ -21,6 +21,7 @@ import com.GestorProyectos.dto.ApiResponse;
 import com.GestorProyectos.dto.SaveCandidateRequest;
 import com.GestorProyectos.dto.SavedCandidateDto;
 import com.GestorProyectos.service.CandidateService;
+import com.GestorProyectos.service.QuotaService.QuotaExceededException;
 
 @RestController
 @RequestMapping("/api/candidates")
@@ -52,8 +53,12 @@ public class CandidateController {
     @PostMapping
     public ResponseEntity<ApiResponse<SavedCandidateDto>> save(
             @Valid @RequestBody SaveCandidateRequest req, Principal principal) {
-        return ResponseEntity.ok(
-            ApiResponse.ok(candidateService.save(principal.getName(), req)));
+        try {
+            return ResponseEntity.ok(
+                ApiResponse.ok(candidateService.save(principal.getName(), req)));
+        } catch (QuotaExceededException e) {
+            return ResponseEntity.status(429).body(ApiResponse.error(e.getMessage()));
+        }
     }
 
     /**
