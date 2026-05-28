@@ -1,11 +1,13 @@
 package com.GestorProyectos.security;
 
+import java.util.Arrays;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -40,6 +42,9 @@ public class SecurityConfiguration {
     private UserRepository userRepository;
 
     @Autowired
+    private RateLimitFilter rateLimitFilter;
+
+    @Autowired
     private HttpCookieOAuth2AuthorizationRequestRepository cookieAuthRequestRepository;
 
     @Autowired
@@ -47,6 +52,9 @@ public class SecurityConfiguration {
 
     @Autowired
     private OAuth2AuthenticationFailureHandler oAuth2FailureHandler;
+
+    @Value("${app.allowed-origins:http://localhost:3000}")
+    private String allowedOrigins;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -126,6 +134,7 @@ public class SecurityConfiguration {
             .failureHandler(oAuth2FailureHandler)
         );
 
+        http.addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -134,7 +143,7 @@ public class SecurityConfiguration {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000"));
+        config.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

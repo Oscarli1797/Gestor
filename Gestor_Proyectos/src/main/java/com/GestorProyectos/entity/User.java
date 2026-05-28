@@ -55,6 +55,8 @@ public class User implements Serializable{
 	private LocalDate searchResetAt;
 	
 	
+	public Long getId() { return id; }
+
 	public User() {
 	}
 

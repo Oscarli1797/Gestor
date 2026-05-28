@@ -1,6 +1,7 @@
 package com.GestorProyectos.service;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -40,8 +41,7 @@ public class QuotaService {
         LocalDate resetAt = user.getSearchResetAt();
 
         // Reset counter at the start of each new month
-        if (resetAt == null || today.getMonthValue() != resetAt.getMonthValue()
-                || today.getYear() != resetAt.getYear()) {
+        if (resetAt == null || !YearMonth.from(today).equals(YearMonth.from(resetAt))) {
             user.setSearchCount(0);
             user.setSearchResetAt(today);
         }
@@ -76,8 +76,7 @@ public class QuotaService {
     public int currentSearchCount(User user) {
         LocalDate today = LocalDate.now();
         LocalDate resetAt = user.getSearchResetAt();
-        if (resetAt == null || today.getMonthValue() != resetAt.getMonthValue()
-                || today.getYear() != resetAt.getYear()) {
+        if (resetAt == null || !YearMonth.from(today).equals(YearMonth.from(resetAt))) {
             return 0;
         }
         return user.getSearchCount();

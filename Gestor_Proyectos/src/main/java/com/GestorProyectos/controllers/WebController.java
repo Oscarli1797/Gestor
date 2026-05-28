@@ -1,12 +1,13 @@
 package com.GestorProyectos.controllers;
 
-import java.io.BufferedOutputStream;
 import java.security.Principal;
 import java.util.List;
 
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -25,6 +26,8 @@ import com.GestorProyectos.service.SearchService;
 @RequestMapping("/api")
 public class WebController {
 
+    private static final Logger log = LoggerFactory.getLogger(WebController.class);
+
     @Autowired private SearchService searchService;
     @Autowired private QuotaService  quotaService;
 
@@ -39,7 +42,10 @@ public class WebController {
             @RequestParam(required = false, defaultValue = "") String location,
             Principal principal) {
 
-        quotaService.checkAndIncrementSearch(principal.getName());
+        // Only consume quota when the result is not already cached
+        if (!searchService.isCached(platform, query, location)) {
+            quotaService.checkAndIncrementSearch(principal.getName());
+        }
         List<DeveloperDto> results = searchService.search(platform, query, location);
         List<DeveloperDto> page = results.size() > PAGE_SIZE
             ? results.subList(0, PAGE_SIZE) : results;
@@ -92,7 +98,7 @@ public class WebController {
             out.write(csv.toString().getBytes("UTF-8"));
             out.flush();
         } catch (Exception e) {
-            System.out.println("Error exporting CSV: " + e.getMessage());
+            log.error("Error exporting CSV: {}", e.getMessage());
         }
     }
 

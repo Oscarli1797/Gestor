@@ -40,6 +40,7 @@ public class CandidateService {
      * Save a developer. Idempotent: if already saved, the existing record
      * is returned unchanged (notes are NOT overwritten on re-save).
      */
+    @Transactional
     public SavedCandidateDto save(String username, SaveCandidateRequest req) {
         User user = requireUser(username);
         // Only check quota for new saves (idempotent re-save is free)
@@ -79,6 +80,7 @@ public class CandidateService {
     }
 
     /** Update the recruiter's private notes for a saved candidate. */
+    @Transactional
     public SavedCandidateDto updateNotes(String username, String developerId, String notes) {
         long uid = requireUser(username).getId();
         SavedCandidate sc = candidateRepo
@@ -93,6 +95,7 @@ public class CandidateService {
     );
 
     /** Update the pipeline status for a saved candidate. */
+    @Transactional
     public SavedCandidateDto updateStatus(String username, String developerId, String status) {
         if (!VALID_STATUSES.contains(status)) {
             throw new IllegalArgumentException("Invalid status: " + status);
@@ -106,6 +109,7 @@ public class CandidateService {
     }
 
     /** Link (or clear) a LinkedIn profile URL for a saved candidate. */
+    @Transactional
     public SavedCandidateDto updateLinkedIn(String username, String developerId, String linkedinUrl) {
         long uid = requireUser(username).getId();
         SavedCandidate sc = candidateRepo

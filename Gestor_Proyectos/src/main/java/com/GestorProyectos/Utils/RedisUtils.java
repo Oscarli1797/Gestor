@@ -5,9 +5,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.annotation.Resource;
-
-import org.jvnet.hk2.annotations.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.ListOperations;
@@ -19,11 +18,14 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class RedisUtils {
+
+    private static final Logger log = LoggerFactory.getLogger(RedisUtils.class);
+
     @SuppressWarnings("rawtypes")
-	@Autowired
+    @Autowired
     private RedisTemplate redisTemplate;
 
-    private static double size = Math.pow(2, 32);
+    private static final double size = Math.pow(2, 32);
 
     /**
      * Escribir en el cache
@@ -39,7 +41,7 @@ public class RedisUtils {
             operations.setBit(key, offset, isShow);
             result = true;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Redis operation failed", e);
         }
         return result;
     }
@@ -56,7 +58,7 @@ public class RedisUtils {
             ValueOperations<String, Object> operations = redisTemplate.opsForValue();
             result = operations.getBit(key, offset);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Redis operation failed", e);
         }
         return result;
     }
@@ -74,7 +76,7 @@ public class RedisUtils {
             operations.set(key, value);
             result = true;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Redis operation failed", e);
         }
         return result;
     }
@@ -93,7 +95,7 @@ public class RedisUtils {
             redisTemplate.expire(key, expireTime, TimeUnit.SECONDS);
             result = true;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Redis operation failed", e);
         }
         return result;
     }
@@ -234,7 +236,7 @@ public class RedisUtils {
      */
     public void saveDataToRedis(String name) {
         double index = Math.abs(name.hashCode() % size);
-        long indexLong = new Double(index).longValue();
+        long indexLong = (long) index;
         boolean availableUsers = setBit("availableUsers", indexLong, true);
     }
 
@@ -245,7 +247,7 @@ public class RedisUtils {
      */
     public boolean getDataToRedis(String name) {
         double index = Math.abs(name.hashCode() % size);
-        long indexLong = new Double(index).longValue();
+        long indexLong = (long) index;
         return getBit("availableUsers", indexLong);
     }
 

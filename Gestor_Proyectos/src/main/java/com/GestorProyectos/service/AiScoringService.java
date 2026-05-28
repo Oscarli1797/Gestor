@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -30,6 +32,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 @Service
 public class AiScoringService {
+
+    private static final Logger log = LoggerFactory.getLogger(AiScoringService.class);
 
     private static final String CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
     private static final String ANTHROPIC_VERSION = "2023-06-01";
@@ -88,7 +92,7 @@ public class AiScoringService {
 
         } catch (Exception e) {
             // Silently degrade — AI enrichment is best-effort
-            System.out.println("AI scoring skipped for " + profile.getUsername() + ": " + e.getMessage());
+            log.warn("AI scoring skipped for {}: {}", profile.getUsername(), e.getMessage());
         }
     }
 

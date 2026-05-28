@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -20,6 +22,8 @@ import com.GestorProyectos.dto.DeveloperDto;
 
 @Service
 public class SearchService {
+
+    private static final Logger log = LoggerFactory.getLogger(SearchService.class);
 
     @Value("${api.github.token}")
     private String githubToken;
@@ -43,6 +47,14 @@ public class SearchService {
      * @param platform 1=GitHub 2=GitLab 3=StackOverflow 4=Bitbucket
      * @param location optional city/country filter (only applied on GitHub)
      */
+    /**
+     * Returns true if the result for this query is already cached (no API call needed).
+     */
+    public boolean isCached(int platform, String query, String location) {
+        String cacheKey = platform + ":" + query + ":" + (location != null ? location : "");
+        return redisUtils.exists(cacheKey);
+    }
+
     @SuppressWarnings("unchecked")
     public List<DeveloperDto> search(int platform, String query, String location) {
         String cacheKey = platform + ":" + query + ":" + (location != null ? location : "");
@@ -109,7 +121,7 @@ public class SearchService {
                 if (dev != null) results.add(dev);
             }
         } catch (Exception e) {
-            System.out.println("GitHub search error: " + e.getMessage());
+            log.warn("GitHub search error: {}", e.getMessage());
         }
         return results;
     }
@@ -191,7 +203,7 @@ public class SearchService {
                     .build());
             }
         } catch (Exception e) {
-            System.out.println("GitLab search error: " + e.getMessage());
+            log.warn("GitLab search error: {}", e.getMessage());
         }
         return results;
     }
@@ -239,7 +251,7 @@ public class SearchService {
                     .build());
             }
         } catch (Exception e) {
-            System.out.println("StackOverflow search error: " + e.getMessage());
+            log.warn("StackOverflow search error: {}", e.getMessage());
         }
         return results;
     }
@@ -295,7 +307,7 @@ public class SearchService {
                     .build());
             }
         } catch (Exception e) {
-            System.out.println("Bitbucket search error: " + e.getMessage());
+            log.warn("Bitbucket search error: {}", e.getMessage());
         }
         return results;
     }

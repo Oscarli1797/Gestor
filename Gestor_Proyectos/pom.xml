@@ -106,6 +106,12 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Actuator (health check for load balancers) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
 		<!-- Dev / Test -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

@@ -9,6 +9,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -25,6 +27,8 @@ import com.GestorProyectos.dto.LanguageStatDto;
 
 @Service
 public class GitHubProfileService {
+
+    private static final Logger log = LoggerFactory.getLogger(GitHubProfileService.class);
 
     private static final String GRAPHQL_URL = "https://api.github.com/graphql";
     private static final long PROFILE_CACHE_SECONDS = 86_400L; // 24 hours
@@ -129,7 +133,7 @@ public class GitHubProfileService {
 
             return parseUser(user);
         } catch (Exception e) {
-            System.out.println("GitHub GraphQL error for " + username + ": " + e.getMessage());
+            log.warn("GitHub GraphQL error for {}: {}", username, e.getMessage());
             return null;
         }
     }
